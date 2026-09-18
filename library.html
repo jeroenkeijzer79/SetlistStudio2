@@ -1,0 +1,22 @@
+<section class="panel panel-library" aria-label="Bibliotheek" id="panel-library">
+      <div class="panel-header">
+        <h2>Bibliotheek</h2>
+      </div>
+
+      <div class="library-filters">
+        <input type="search" class="input" id="library-search" placeholder="Zoek nummer…" aria-label="Zoek in bibliotheek">
+        <div class="genre-filter" id="genre-filter">
+          <button type="button" class="btn genre-filter-btn" id="genre-filter-btn" aria-haspopup="true" aria-expanded="false">
+            <span id="genre-filter-label">Alle genres</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="genre-filter-popover" id="genre-filter-popover" hidden></div>
+        </div>
+        <button type="button" class="btn btn-accent" id="open-add-track-btn" aria-label="Nummer toevoegen" title="Nummer toevoegen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <datalist id="genre-datalist"></datalist>
+
+      <div class="library-list" id="library-list"></div>
+    </section>

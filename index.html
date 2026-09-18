@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setlist Studio</title>
+  <script>
+    (function () {
+      const isMobilePhone = /Android.*Mobile|iPhone|iPod|Windows Phone|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+
+      window.location.replace(isMobilePhone ? "mobile.html" : "desktop.html");
+    })();
+  </script>
+</head>
+<body>
+  <noscript>
+    <p>JavaScript is vereist om de juiste versie te openen.</p>
+    <p><a href="desktop.html">Open tablet/desktop-versie</a></p>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,2885 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeroen & Irene - Setlist Studio Mobile</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+</head>
+<body>
+<div class="app-version" aria-label="Versie">v1.4</div>
+
+
+
+
+<div class="app">
+  <header class="topbar" data-component="topbar"></header>
+
+  <div id="settings-overlay" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-label="Instellingen">
+    <div class="settings-modal-card">
+      <div class="settings-modal-header">
+        <h2>Instellingen</h2>
+        <button type="button" class="icon-btn" id="settings-close-btn" aria-label="Sluiten" title="Sluiten">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div id="settings-panel" class="settings-panel"></div>
+    </div>
+  </div>
+
+  <div id="banner" class="banner" hidden role="status"></div>
+
+  <div id="auth-gate" class="auth-gate" hidden role="dialog" aria-modal="true" aria-label="Inloggen vereist">
+    <form id="auth-gate-form" class="auth-gate-card">
+      <h2>Inloggen vereist</h2>
+      <p class="hint">Deze setlist-omgeving is afgeschermd. Vraag Jeroen om een gebruikersnaam en wachtwoord.</p>
+      <input type="text" class="input" id="auth-gate-username" placeholder="Gebruikersnaam" aria-label="Gebruikersnaam" autocomplete="username" required>
+      <input type="password" class="input" id="auth-gate-password" placeholder="Wachtwoord" aria-label="Wachtwoord" autocomplete="current-password" required>
+      <p class="field-error" id="auth-gate-error" hidden></p>
+      <button type="submit" class="btn btn-accent" id="auth-gate-submit">Inloggen</button>
+    </form>
+  </div>
+
+  <div id="add-track-modal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-label="Nummer toevoegen">
+    <form id="add-track-form" class="modal-card">
+      <h2>Nummer toevoegen</h2>
+      <input type="text" class="input" id="new-track-title" placeholder="Titel" aria-label="Titel van nieuw nummer" required>
+      <input type="text" class="input" id="new-track-artist" placeholder="Artiest (optioneel)" aria-label="Oorspronkelijke artiest">
+      <input type="text" class="input" id="new-track-genre" placeholder="Genre (optioneel)" aria-label="Genre" list="genre-datalist">
+      <input type="text" class="input" id="new-track-programma" placeholder="Programma (optioneel)" aria-label="Programma (piano-instelling)">
+      <input type="text" class="input input-duration mono" id="new-track-duration" placeholder="mm:ss" aria-label="Duur (mm:ss)" required>
+      <p class="field-error" id="add-track-error" hidden></p>
+      <div class="modal-card-actions">
+        <button type="button" class="btn btn-ghost" id="add-track-cancel-btn">Annuleren</button>
+        <button type="submit" class="btn btn-accent">Toevoegen</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="export-format-modal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-label="Downloadformaat kiezen">
+    <div class="modal-card">
+      <h2>Downloadformaat kiezen</h2>
+      <p class="hint">Kies het formaat waarin je de actieve setlist wilt downloaden.</p>
+      <div class="modal-card-actions">
+        <button type="button" class="btn btn-ghost" data-export-format="pdf">PDF</button>
+        <button type="button" class="btn btn-accent" data-export-format="docx">Word</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="add-existing-track-modal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-label="Nummer toevoegen aan setlist">
+    <div class="modal-card modal-card-wide">
+      <h2>Nummer toevoegen aan setlist</h2>
+      <input type="search" class="input" id="add-existing-track-search" placeholder="Zoek nummer…" aria-label="Zoek nummer">
+      <div class="picker-list" id="add-existing-track-list"></div>
+      <div class="modal-card-actions">
+        <button type="button" class="btn btn-accent" id="add-existing-track-done-btn">Klaar</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="layout">
+    <section class="panel panel-library" data-component="library"></section>
+
+    <div class="resize-handle" id="resize-handle-1" role="separator" aria-orientation="vertical" aria-label="Breedte van het eerste blok aanpassen" tabindex="0"><span class="resize-handle-bar"></span></div>
+
+    <section class="panel panel-setlists" data-component="setlists"></section>
+
+    <div class="resize-handle" id="resize-handle-2" role="separator" aria-orientation="vertical" aria-label="Breedte van het tweede blok aanpassen" tabindex="0"><span class="resize-handle-bar"></span></div>
+
+    <section class="panel panel-editor" data-component="active-setlist"></section>
+  </main>
+</div>
+
+<script>
+(function(){
+var n=document.querySelectorAll('[data-component]');
+for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLHttpRequest();x.open('GET','components/'+k+'.html',false);x.send(null);if(x.status!==0&&(x.status<200||x.status>=300))throw new Error('Component laden mislukt: '+k);n[i].outerHTML=x.responseText;}
+})();
+</script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------- helpers ----------
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function plural(n, sing, plur){ return n === 1 ? sing : plur; }
+  function parseDuration(raw){
+    if (raw == null) return null;
+    var str = String(raw).trim();
+    if (!str) return null;
+    if (/^\d+$/.test(str)) return parseInt(str, 10);
+    var parts = str.split(":");
+    if (parts.length < 2 || parts.length > 3) return null;
+    for (var i=0;i<parts.length;i++){ if(!/^\d{1,2}$/.test(parts[i].trim())) return null; }
+    var secs = 0;
+    for (var j=0;j<parts.length;j++){ secs = secs*60 + parseInt(parts[j],10); }
+    return secs;
+  }
+  function formatDuration(totalSec){
+    totalSec = Math.max(0, Math.round(totalSec || 0));
+    var h = Math.floor(totalSec/3600);
+    var m = Math.floor((totalSec%3600)/60);
+    var s = totalSec%60;
+    if (h>0) return h + ":" + String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+    return m + ":" + String(s).padStart(2,"0");
+  }
+  // Formats a <input type="date"> value ("YYYY-MM-DD") as a short Dutch date, e.g. "14 sep 2026".
+  function formatDateNl(dateStr){
+    if (!dateStr) return "";
+    var parts = String(dateStr).split("-");
+    if (parts.length !== 3) return "";
+    var y = parseInt(parts[0],10), m = parseInt(parts[1],10), d = parseInt(parts[2],10);
+    if (!y || !m || !d) return "";
+    var months = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+    if (m < 1 || m > 12) return "";
+    return d + " " + months[m-1] + " " + y;
+  }
+  function csvEscape(v){
+    v = String(v);
+    if (/[";\n]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+    return v;
+  }
+  function uid(){
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+  var ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
+  var ICON_PENCIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  var ICON_HANDLE = '<svg viewBox="0 0 8 20" fill="currentColor"><circle cx="2" cy="3" r="1.4"/><circle cx="6" cy="3" r="1.4"/><circle cx="2" cy="10" r="1.4"/><circle cx="6" cy="10" r="1.4"/><circle cx="2" cy="17" r="1.4"/><circle cx="6" cy="17" r="1.4"/></svg>';
+  var ICON_UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
+  var ICON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  var ICON_DOWNLOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>';
+  var ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  // ---------- state ----------
+  var tracksMap = new Map();
+  var setlistsMap = new Map();
+  var activeSetlistId = null;
+  var db = null;
+  var usingDb = false;
+  var localStorageOk = false;
+  var STORAGE_KEY_TRACKS = "setlist-studio:tracks";
+  var STORAGE_KEY_SETLISTS = "setlist-studio:setlists";
+  var FIREBASE_CONFIG_KEY = "setlist-studio:firebase-config";
+  var PENDING_MIGRATION_KEY = "setlist-studio:pending-migration";
+  // Baked-in project so cloud sync works for every visitor out of the box,
+  // with no per-device setup. A visitor can still override it with their own
+  // project below, or turn cloud sync off entirely on their device — that
+  // choice is stored under FIREBASE_CONFIG_KEY as the literal string
+  // "disabled", which resolveFirebaseConfig() treats as distinct from "no
+  // override configured yet" so switching it off doesn't just fall straight
+  // back to this same default.
+  var DEFAULT_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDBa9pD6xCjtjxYOoxcdK8Feor2rV-0_U4",
+    authDomain: "setliststudio-d2ab1.firebaseapp.com",
+    projectId: "setliststudio-d2ab1",
+    storageBucket: "setliststudio-d2ab1.firebasestorage.app",
+    messagingSenderId: "277799225691",
+    appId: "1:277799225691:web:11626315899993590bf27e",
+    measurementId: "G-PVSDB64C41"
+  };
+  // ---------- theme (per-device colour overrides) ----------
+  var THEME_KEY = "setlist-studio:theme";
+  var DEFAULT_THEME = {bg:"#161616", surface:"#232323", surface2:"#2d2b29", accent:"#f4673b", text:"#f5f3f0", textMuted:"#a89f96"};
+  function loadThemeOverride(){
+    try{
+      var raw = window.localStorage.getItem(THEME_KEY);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      return (obj && typeof obj === "object") ? obj : null;
+    } catch(e){ return null; }
+  }
+  function saveThemeOverride(theme){
+    try{ window.localStorage.setItem(THEME_KEY, JSON.stringify(theme)); } catch(e){ /* ignore */ }
+  }
+  function clearThemeOverride(){
+    try{ window.localStorage.removeItem(THEME_KEY); } catch(e){ /* ignore */ }
+  }
+  function currentTheme(){
+    return Object.assign({}, DEFAULT_THEME, loadThemeOverride() || {});
+  }
+  function hexToRgb(hex){
+    var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
+    if (!m) return {r:0, g:0, b:0};
+    return {r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16)};
+  }
+  function rgbToHex(r,g,b){
+    function h(n){ return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2,"0"); }
+    return "#" + h(r) + h(g) + h(b);
+  }
+  function darkenHex(hex, amount){
+    var c = hexToRgb(hex);
+    return rgbToHex(c.r*(1-amount), c.g*(1-amount), c.b*(1-amount));
+  }
+  function relativeLuminance(hex){
+    var c = hexToRgb(hex);
+    function lin(v){ v/=255; return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }
+    return 0.2126*lin(c.r) + 0.7152*lin(c.g) + 0.0722*lin(c.b);
+  }
+  // Accent-strong (button border/hover) and accent-contrast (button text)
+  // are derived from the chosen button colour rather than picked
+  // separately, so a custom button colour still looks coherent.
+  function applyTheme(theme){
+    var root = document.documentElement.style;
+    root.setProperty("--bg", theme.bg);
+    root.setProperty("--surface", theme.surface);
+    root.setProperty("--surface-2", theme.surface2);
+    root.setProperty("--text", theme.text);
+    root.setProperty("--text-muted", theme.textMuted);
+    root.setProperty("--accent", theme.accent);
+    root.setProperty("--accent-strong", darkenHex(theme.accent, 0.15));
+    root.setProperty("--accent-contrast", relativeLuminance(theme.accent) > 0.45 ? "#20120a" : "#fdf6f0");
+  }
+
+  // ---------- display settings (per-device) ----------
+  var SHOW_PROGRAMMA_KEY = "setlist-studio:show-programma";
+  var SHOW_FUTURE_SETLISTS_KEY = "setlist-studio:show-future-setlists";
+  function loadShowFutureSetlistsSetting(){
+    try{ return window.localStorage.getItem(SHOW_FUTURE_SETLISTS_KEY) === "1"; } catch(e){ return false; }
+  }
+  function saveShowFutureSetlistsSetting(val){
+    try{ window.localStorage.setItem(SHOW_FUTURE_SETLISTS_KEY, val ? "1" : "0"); } catch(e){ /* ignore */ }
+  }
+  function loadShowProgrammaSetting(){
+    try{ return window.localStorage.getItem(SHOW_PROGRAMMA_KEY) === "1"; } catch(e){ return false; }
+  }
+  function saveShowProgrammaSetting(val){
+    try{ window.localStorage.setItem(SHOW_PROGRAMMA_KEY, val ? "1" : "0"); } catch(e){ /* ignore */ }
+  }
+
+  var librarySearchTerm = "";
+  var libraryGenreFilters = new Set();
+  var showProgrammaInLibrary = loadShowProgrammaSetting();
+  var showFutureSetlistsOnly = loadShowFutureSetlistsSetting();
+  var editingTrackId = null;
+  var creatingSetlist = false;
+  var renamingSetlistId = null;
+  var pendingConfirm = new Map(); // key -> timeoutId
+  var dropIndicator = document.createElement("div");
+  dropIndicator.className = "drop-indicator";
+
+  var bannerEl = document.getElementById("banner");
+  var authGateEl = document.getElementById("auth-gate");
+  var libraryListEl = document.getElementById("library-list");
+  var setlistsListEl = document.getElementById("setlists-list");
+  var editorPanelEl = document.getElementById("editor-panel");
+  var statTracksEl = document.getElementById("stat-tracks");
+  var statSetlistsEl = document.getElementById("stat-setlists");
+  var newSetlistSlotEl = document.getElementById("new-setlist-form-slot");
+
+  function showBanner(msg, kind){
+    bannerEl.textContent = msg;
+    bannerEl.className = "banner" + (kind ? " " + kind : "");
+    bannerEl.hidden = false;
+  }
+  function hideBannerIfMatches(){ /* no-op placeholder for future auto-hide logic */ }
+
+  function requestConfirm(key, renderFn){
+    if (pendingConfirm.has(key)){
+      clearTimeout(pendingConfirm.get(key));
+      pendingConfirm.delete(key);
+      return true;
+    }
+    var t = setTimeout(function(){ pendingConfirm.delete(key); renderFn(); }, 3000);
+    pendingConfirm.set(key, t);
+    renderFn();
+    return false;
+  }
+
+  // localStorage is the persistence fallback for hosting outside Claude
+  // (e.g. GitHub Pages), where the `db` capability doesn't exist.
+  function probeLocalStorage(){
+    try{
+      var k = "__setlist_studio_probe__";
+      window.localStorage.setItem(k, "1");
+      window.localStorage.removeItem(k);
+      return true;
+    } catch(e){ return false; }
+  }
+  function loadLocal(){
+    try{
+      var t = JSON.parse(window.localStorage.getItem(STORAGE_KEY_TRACKS) || "[]");
+      var s = JSON.parse(window.localStorage.getItem(STORAGE_KEY_SETLISTS) || "[]");
+      t.forEach(function(item){ if (item && item.id) tracksMap.set(item.id, item); });
+      s.forEach(function(item){ if (item && item.id) setlistsMap.set(item.id, item); });
+    } catch(e){ /* corrupt or blocked; start empty */ }
+  }
+  function persistLocal(){
+    if (!localStorageOk) return;
+    try{
+      window.localStorage.setItem(STORAGE_KEY_TRACKS, JSON.stringify(Array.from(tracksMap.values())));
+      window.localStorage.setItem(STORAGE_KEY_SETLISTS, JSON.stringify(Array.from(setlistsMap.values())));
+    } catch(e){ /* storage full or blocked; ignore */ }
+  }
+
+  function totalDurationFor(sl){
+    var total = 0;
+    sl.trackIds.forEach(function(tid){
+      var t = tracksMap.get(tid);
+      if (t) total += (t.durationSec || 0);
+    });
+    return total;
+  }
+
+  // "Praatje" tracks are spoken interludes, not songs — they still count
+  // toward the setlist's total duration (they take real time in the show)
+  // but not toward the displayed/required number of tracks.
+  function songCount(sl){
+    var n = 0;
+    sl.trackIds.forEach(function(tid){
+      var t = tracksMap.get(tid);
+      if (!t || t.genre !== "Praatje") n++;
+    });
+    return n;
+  }
+
+  // ---------- store: Claude db capability, self-configured Firebase cloud
+  // sync, local-only browser storage, or in-memory-only, in that priority
+  // order. `db` ends up pointing at either the Claude capability's namespace
+  // or a real Firestore instance — both expose the same collection(path)
+  // .doc(id).{get,set,update,delete,onSnapshot} shape, so every mutation
+  // function below (addTrack, mutateSetlist, ...) works unchanged for
+  // either remote backend; only initStore() needs to know which one it is.
+  var storeMode = "memory"; // "claude" | "cloud" | "local" | "memory"
+  var firebaseConfigSource = null; // "default" | "custom" | null
+
+  // ---------- optional login gate (self-hosted Firebase / GitHub Pages
+  // version only — the Claude-hosted version is already access-controlled
+  // by Claude's own sharing). Off by default (public); Jeroen turns it on
+  // per project once he's signed in himself. Real enforcement lives in the
+  // Firestore security rules, not in this client-side check — the rules
+  // must reference the same `meta/settings.requireLogin` flag this reads.
+  var fbApp = null;
+  var authInstance = null;
+  var authRequired = false;
+  var currentUser = null;
+  var remoteSubscribed = false;
+  var unsubTracks = null;
+  var unsubSetlists = null;
+  var unsubSettings = null;
+
+  // Tri-state resolution of which Firebase project (if any) this device
+  // should use: an explicit "disabled" marker wins (the visitor turned
+  // cloud sync off here), then a per-device custom override, then the
+  // built-in default so it works for everyone with zero setup.
+  function resolveFirebaseConfig(){
+    var raw = null;
+    try{ raw = window.localStorage.getItem(FIREBASE_CONFIG_KEY); } catch(e){ /* ignore */ }
+    if (raw === "disabled"){ firebaseConfigSource = null; return null; }
+    if (raw){
+      try{
+        var obj = JSON.parse(raw);
+        if (obj && obj.apiKey && obj.projectId){ firebaseConfigSource = "custom"; return obj; }
+      } catch(e){ /* ignore, fall through to default */ }
+    }
+    if (DEFAULT_FIREBASE_CONFIG){ firebaseConfigSource = "default"; return DEFAULT_FIREBASE_CONFIG; }
+    firebaseConfigSource = null;
+    return null;
+  }
+  function saveFirebaseConfig(cfg){
+    try{ window.localStorage.setItem(FIREBASE_CONFIG_KEY, JSON.stringify(cfg)); } catch(e){ /* ignore */ }
+  }
+  function clearFirebaseConfig(){
+    try{ window.localStorage.removeItem(FIREBASE_CONFIG_KEY); } catch(e){ /* ignore */ }
+  }
+  function disableFirebaseConfig(){
+    try{ window.localStorage.setItem(FIREBASE_CONFIG_KEY, "disabled"); } catch(e){ /* ignore */ }
+  }
+  // Accepts either the raw `const firebaseConfig = {...};` snippet Firebase
+  // shows in its console, or plain JSON.
+  function parseFirebaseConfigInput(text){
+    var match = String(text || "").match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    var objText = match[0];
+    try{
+      var obj = new Function("return (" + objText + ");")();
+      if (obj && typeof obj === "object" && obj.apiKey && obj.projectId) return obj;
+    } catch(e){ /* fall through to strict JSON */ }
+    try{
+      var asJson = JSON.parse(objText);
+      if (asJson && asJson.apiKey && asJson.projectId) return asJson;
+    } catch(e){ /* ignore */ }
+    return null;
+  }
+
+  function importSectionHtml(){
+    return '' +
+      '<div class="settings-divider"></div>' +
+      '<div class="settings-import">' +
+        '<h3 class="settings-subheading">Bibliotheek importeren</h3>' +
+        '<button type="button" class="btn btn-ghost btn-small" id="upload-btn">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>' +
+          ' Bestand kiezen' +
+        '</button>' +
+        '<input type="file" id="file-input" accept=".csv,.txt,text/csv,text/plain" hidden>' +
+      '</div>' +
+      '<div class="settings-divider"></div>' +
+      '<div class="settings-import">' +
+        '<h3 class="settings-subheading">Setlists importeren (Word)</h3>' +
+        '<p class="hint">Eén setlist per pagina — de naam en de nummers op elke pagina worden automatisch herkend.</p>' +
+        '<button type="button" class="btn btn-ghost btn-small" id="upload-setlists-btn">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>' +
+          ' Bestand kiezen' +
+        '</button>' +
+        '<input type="file" id="setlist-docx-input" accept=".docx" hidden>' +
+      '</div>' +
+      backupSectionHtml() +
+      displaySectionHtml() +
+      themeSectionHtml();
+  }
+
+  function backupSectionHtml(){
+    return '' +
+      '<div class="settings-divider"></div>' +
+      '<div class="settings-import">' +
+        '<h3 class="settings-subheading">Back-up</h3>' +
+        '<p class="hint">Bewaar een back-up van je hele bibliotheek en al je setlists, zodat je alles kunt terugzetten als er iets verwijderd wordt.</p>' +
+        '<button type="button" class="btn btn-ghost btn-small" id="backup-export-btn">' +
+          ICON_DOWNLOAD + ' Back-up downloaden' +
+        '</button>' +
+        '<button type="button" class="btn btn-ghost btn-small" id="backup-import-btn">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>' +
+          ' Back-up herstellen' +
+        '</button>' +
+        '<input type="file" id="backup-import-input" accept=".json,application/json" hidden>' +
+      '</div>';
+  }
+
+  function displaySectionHtml(){
+    return '' +
+      '<div class="settings-divider"></div>' +
+      '<div class="settings-display">' +
+        '<h3 class="settings-subheading">Weergave</h3>' +
+        '<label class="settings-toggle">' +
+          '<input type="checkbox" id="show-programma-toggle"' + (showProgrammaInLibrary ? ' checked' : '') + '>' +
+          'Programmanummer tonen bij nummers (bibliotheek en actieve setlist)' +
+        '</label>' +
+      '</div>';
+  }
+
+  function themeSectionHtml(){
+    var t = currentTheme();
+    var swatches = [
+      {id:"theme-bg", key:"bg", label:"Achtergrond"},
+      {id:"theme-surface", key:"surface", label:"Blokken"},
+      {id:"theme-surface2", key:"surface2", label:"Versleepbare items"},
+      {id:"theme-accent", key:"accent", label:"Knoppen"},
+      {id:"theme-text", key:"text", label:"Tekst"},
+      {id:"theme-textmuted", key:"textMuted", label:"Tekst (gedempt)"}
+    ];
+    return '' +
+      '<div class="settings-divider"></div>' +
+      '<div class="settings-theme">' +
+        '<h3 class="settings-subheading">Kleuren aanpassen</h3>' +
+        '<div class="theme-swatch-row">' +
+          swatches.map(function(s){
+            return '<label class="theme-swatch">' +
+              '<input type="color" id="' + s.id + '" value="' + t[s.key] + '">' +
+              '<span>' + s.label + '</span>' +
+            '</label>';
+          }).join("") +
+        '</div>' +
+        '<button type="button" class="btn btn-ghost btn-small" id="theme-reset-btn">Standaardkleuren herstellen</button>' +
+      '</div>';
+  }
+
+  function renderSettingsPanel(){
+    var panel = document.getElementById("settings-panel");
+    if (!panel) return;
+    if (storeMode === "claude"){
+      panel.innerHTML = '<div class="settings-body"><p>Je gebruikt de Claude-versie: setlists worden al automatisch gedeeld met iedereen die deze pagina opent. Cloud-synchronisatie hieronder is alleen bedoeld voor de losse (bijv. GitHub Pages) versie van deze pagina.</p>' + importSectionHtml() + '</div>';
+      return;
+    }
+    if (storeMode === "cloud"){
+      var statusMsg = firebaseConfigSource === "default"
+        ? "Verbonden met cloud-synchronisatie (automatisch, via de ingebouwde configuratie van deze site). Iedereen die deze pagina opent, ziet en bewerkt dezelfde bibliotheek en setlists — zonder dat ze zelf iets hoeven in te stellen."
+        : "Verbonden met cloud-synchronisatie via je eigen configuratie. Iedereen die deze pagina met dezelfde configuratie opent, ziet en bewerkt dezelfde bibliotheek en setlists.";
+      var authSectionHtml = '' +
+        '<div class="settings-divider"></div>' +
+        '<div class="login-status">' +
+          (currentUser
+            ? '<span>Ingelogd als <strong>' + escapeHtml(emailToUsername(currentUser.email)) + '</strong></span><button type="button" class="btn btn-ghost btn-small" id="auth-logout-btn">Uitloggen</button>'
+            : '<span>Niet ingelogd</span>') +
+        '</div>' +
+        (!currentUser ?
+          '<form id="settings-login-form" class="login-form">' +
+            '<input type="text" class="input" id="settings-login-username" placeholder="Gebruikersnaam" aria-label="Gebruikersnaam" autocomplete="username">' +
+            '<input type="password" class="input" id="settings-login-password" placeholder="Wachtwoord" aria-label="Wachtwoord" autocomplete="current-password">' +
+            '<button type="submit" class="btn btn-ghost btn-small">Inloggen</button>' +
+          '</form>' +
+          '<p class="field-error" id="settings-login-error" hidden></p>'
+        : '') +
+        '<label class="settings-toggle">' +
+          '<input type="checkbox" id="require-login-toggle"' + (authRequired ? ' checked' : '') + (currentUser ? '' : ' disabled') + '>' +
+          'Login vereisen voor iedereen' +
+        '</label>' +
+        (currentUser ? '' : '<p class="hint">Log in om deze instelling te kunnen wijzigen.</p>') +
+        '<details class="settings-help"><summary>Hoe voeg ik gebruikers toe?</summary>' +
+          '<ol>' +
+            '<li>Ga in de Firebase-console naar <strong>Authentication</strong> en zet de aanmeldmethode <strong>E-mail/wachtwoord</strong> aan.</li>' +
+            '<li>Klik op "Add user". Vul bij e-mail in: <code>gebruikersnaam@setlist-studio.local</code> (kleine letters, geen spaties) en kies zelf een wachtwoord.</li>' +
+            '<li>Geef de gebruikersnaam en het wachtwoord door aan die persoon — daarmee logt die hierboven in.</li>' +
+            '<li>Belangrijk: dit schakelt pas echt af als je ook de Firestore-beveiligingsregels aanpast — vraag hiervoor de exacte tekst.</li>' +
+          '</ol>' +
+        '</details>';
+      panel.innerHTML = '' +
+        '<div class="settings-body">' +
+          '<p class="settings-status">' + statusMsg + '</p>' +
+          authSectionHtml +
+          '<div class="settings-divider"></div>' +
+          '<button type="button" class="btn btn-ghost btn-small" id="disconnect-cloud-btn">Loskoppelen op dit apparaat</button>' +
+          (firebaseConfigSource === "default" ? '' :
+            '<details class="settings-help"><summary>Eigen configuratie wijzigen</summary>' +
+              '<textarea id="firebase-config-input" class="input" rows="5" placeholder="const firebaseConfig = { apiKey: &quot;...&quot;, projectId: &quot;...&quot;, ... };"></textarea>' +
+              '<p class="field-error" id="firebase-config-error" hidden></p>' +
+              '<button type="button" class="btn btn-accent btn-small" id="connect-cloud-btn">Verbinden</button>' +
+            '</details>') +
+          importSectionHtml() +
+        '</div>';
+      return;
+    }
+    var disabledHere = false;
+    try{ disabledHere = window.localStorage.getItem(FIREBASE_CONFIG_KEY) === "disabled"; } catch(e){ /* ignore */ }
+    if (disabledHere && DEFAULT_FIREBASE_CONFIG){
+      panel.innerHTML = '' +
+        '<div class="settings-body">' +
+          '<p>Cloud-synchronisatie staat op dit apparaat uit. De bibliotheek en setlists worden hier lokaal bewaard en niet gedeeld.</p>' +
+          '<button type="button" class="btn btn-accent btn-small" id="reenable-cloud-btn">Cloud-synchronisatie weer inschakelen</button>' +
+          importSectionHtml() +
+        '</div>';
+      return;
+    }
+    panel.innerHTML = '' +
+      '<div class="settings-body">' +
+        '<p>Verbind een gratis Firebase-project om je bibliotheek en setlists te delen tussen apparaten en met anderen (bijv. Irene).</p>' +
+        '<details class="settings-help"><summary>Hoe krijg ik dit?</summary>' +
+          '<ol>' +
+            '<li>Ga naar <strong>console.firebase.google.com</strong> en maak een gratis project.</li>' +
+            '<li>Kies links <strong>Build → Firestore Database</strong>, klik "Create database" en start in testmodus.</li>' +
+            '<li>Ga naar Projectinstellingen (tandwiel) → "Your apps" → voeg een webapp toe (&lt;/&gt;-icoon).</li>' +
+            '<li>Kopieer het getoonde <code>firebaseConfig</code>-object en plak het hieronder.</li>' +
+          '</ol>' +
+        '</details>' +
+        '<textarea id="firebase-config-input" class="input" rows="5" placeholder="const firebaseConfig = { apiKey: &quot;...&quot;, projectId: &quot;...&quot;, ... };"></textarea>' +
+        '<p class="field-error" id="firebase-config-error" hidden></p>' +
+        '<button type="button" class="btn btn-accent btn-small" id="connect-cloud-btn">Verbinden</button>' +
+        importSectionHtml() +
+      '</div>';
+  }
+
+  function handleConnectFirebase(){
+    var input = document.getElementById("firebase-config-input");
+    var errorEl = document.getElementById("firebase-config-error");
+    var cfg = parseFirebaseConfigInput(input ? input.value : "");
+    if (!cfg){
+      if (errorEl){ errorEl.textContent = "Kon de configuratie niet lezen. Plak het volledige firebaseConfig-object zoals Firebase het toont (met apiKey en projectId)."; errorEl.hidden = false; }
+      return;
+    }
+    try{
+      var pending = { tracks: Array.from(tracksMap.values()), setlists: Array.from(setlistsMap.values()) };
+      if (pending.tracks.length || pending.setlists.length){
+        window.sessionStorage.setItem(PENDING_MIGRATION_KEY, JSON.stringify(pending));
+      }
+    } catch(e){ /* ignore */ }
+    saveFirebaseConfig(cfg);
+    window.location.reload();
+  }
+  function handleDisconnectFirebase(){
+    // Explicitly marks this device as opted out, rather than just clearing
+    // the override — otherwise, with a built-in default configured, the
+    // page would immediately reconnect to that same default on reload.
+    disableFirebaseConfig();
+    window.location.reload();
+  }
+  function handleReenableFirebase(){
+    clearFirebaseConfig();
+    window.location.reload();
+  }
+
+  function loadScript(src){
+    return new Promise(function(resolve, reject){
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = function(){ reject(new Error("kon " + src + " niet laden")); };
+      document.head.appendChild(s);
+    });
+  }
+  var firebaseSdkLoadPromise = null;
+  function loadFirebaseSdk(){
+    if (window.firebase && window.firebase.firestore && window.firebase.auth) return Promise.resolve();
+    if (firebaseSdkLoadPromise) return firebaseSdkLoadPromise;
+    var FB_VERSION = "10.13.2";
+    firebaseSdkLoadPromise = loadScript("https://www.gstatic.com/firebasejs/" + FB_VERSION + "/firebase-app-compat.js")
+      .then(function(){ return loadScript("https://www.gstatic.com/firebasejs/" + FB_VERSION + "/firebase-firestore-compat.js"); })
+      .then(function(){ return loadScript("https://www.gstatic.com/firebasejs/" + FB_VERSION + "/firebase-auth-compat.js"); })
+      .catch(function(e){ firebaseSdkLoadPromise = null; throw e; });
+    return firebaseSdkLoadPromise;
+  }
+  async function initFirebase(config){
+    await loadFirebaseSdk();
+    if (!window.firebase || !window.firebase.firestore) throw new Error("Firebase SDK niet beschikbaar.");
+    var app;
+    try{ app = window.firebase.initializeApp(config); }
+    catch(e){ app = window.firebase.initializeApp(config, "setlist-studio-" + Date.now()); }
+    return {db: window.firebase.firestore(app), app: app};
+  }
+
+  // Firebase's email/password sign-in needs an email-shaped identifier, so
+  // a plain username is mapped onto a fixed fake domain. Jeroen must use
+  // this exact same convention when adding a user in the Firebase console
+  // (Authentication → Users → Add user): email field = <username>@setlist-studio.local.
+  function usernameToEmail(username){
+    var clean = String(username || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
+    return clean + "@setlist-studio.local";
+  }
+  function emailToUsername(email){
+    return String(email || "").split("@")[0];
+  }
+
+  function subscribeRemote(){
+    unsubTracks = db.collection("tracks").onSnapshot(function(snap){
+      tracksMap.clear();
+      snap.docs.forEach(function(d){ tracksMap.set(d.id, Object.assign({id:d.id}, d.data())); });
+      renderLibrary(); renderSetlistsList(); renderActiveSetlist(); renderStats();
+    }, function(){ showBanner("De bibliotheek kon niet worden geladen. Probeer de pagina te vernieuwen.", "warn"); });
+
+    unsubSetlists = db.collection("setlists").onSnapshot(function(snap){
+      setlistsMap.clear();
+      snap.docs.forEach(function(d){ setlistsMap.set(d.id, Object.assign({id:d.id}, d.data())); });
+      if (activeSetlistId && !setlistsMap.has(activeSetlistId)) activeSetlistId = null;
+      renderSetlistsList(); renderActiveSetlist(); renderLibrary(); renderStats();
+    }, function(){ showBanner("De setlists konden niet worden geladen. Probeer de pagina te vernieuwen.", "warn"); });
+  }
+
+  // ---------- login gate: settings doc + auth state, kept in sync live so
+  // toggling "Login vereisen" (or signing in/out) takes effect immediately
+  // for everyone, without a page reload.
+  function initAuthAndSettings(app){
+    authInstance = window.firebase.auth(app);
+    return new Promise(function(resolve){
+      var settled = false;
+      function settle(){ if (!settled){ settled = true; resolve(); } }
+      authInstance.onAuthStateChanged(function(user){
+        currentUser = user;
+        handleAuthOrAccessChange();
+      });
+      unsubSettings = db.collection("meta").doc("settings").onSnapshot(function(doc){
+        authRequired = !!(doc.exists && doc.data() && doc.data().requireLogin);
+        handleAuthOrAccessChange();
+        settle();
+      }, function(){ settle(); });
+      // Don't block the initial render forever if the settings read stalls.
+      setTimeout(settle, 4000);
+    });
+  }
+
+  function handleAuthOrAccessChange(){
+    renderAuthGate();
+    renderSettingsPanel();
+    var hasAccess = !authRequired || !!currentUser;
+    if (hasAccess && !remoteSubscribed){
+      remoteSubscribed = true;
+      subscribeRemote();
+      maybeMigratePendingData();
+    } else if (!hasAccess && remoteSubscribed){
+      remoteSubscribed = false;
+      if (unsubTracks){ unsubTracks(); unsubTracks = null; }
+      if (unsubSetlists){ unsubSetlists(); unsubSetlists = null; }
+      tracksMap.clear(); setlistsMap.clear(); activeSetlistId = null;
+      renderLibrary(); renderSetlistsList(); renderActiveSetlist(); renderStats();
+    }
+  }
+
+  function renderAuthGate(){
+    if (!authGateEl) return;
+    authGateEl.hidden = !(storeMode === "cloud" && authRequired && !currentUser);
+  }
+
+  function handleAuthLogin(username, password, errorEl){
+    if (errorEl) errorEl.hidden = true;
+    if (!username || !password){
+      if (errorEl){ errorEl.textContent = "Vul gebruikersnaam en wachtwoord in."; errorEl.hidden = false; }
+      return;
+    }
+    authInstance.signInWithEmailAndPassword(usernameToEmail(username), password).catch(function(e){
+      var msg = "Inloggen mislukt. Controleer gebruikersnaam en wachtwoord.";
+      if (errorEl){ errorEl.textContent = msg; errorEl.hidden = false; }
+      else showBanner(msg, "warn");
+    });
+  }
+  function handleAuthLogout(){
+    if (authInstance) authInstance.signOut();
+  }
+  function handleToggleRequireLogin(checked){
+    if (!currentUser){ showBanner("Log eerst in om deze instelling te wijzigen.", "warn"); return; }
+    db.collection("meta").doc("settings").set({requireLogin: checked}, {merge:true}).catch(function(e){
+      showBanner("Kon instelling niet opslaan: " + (e && e.message ? e.message : "onbekende fout") + ".", "warn");
+    });
+  }
+
+  // One-time handoff: local data present before connecting cloud sync is
+  // uploaded (with its original ids, so setlist track references stay
+  // valid) rather than silently left behind.
+  function maybeMigratePendingData(){
+    var raw;
+    try{ raw = window.sessionStorage.getItem(PENDING_MIGRATION_KEY); } catch(e){ raw = null; }
+    if (!raw) return;
+    try{ window.sessionStorage.removeItem(PENDING_MIGRATION_KEY); } catch(e){ /* ignore */ }
+    var pending;
+    try{ pending = JSON.parse(raw); } catch(e){ return; }
+    if (!pending) return;
+    var tasks = [];
+    (pending.tracks || []).forEach(function(t){
+      var data = Object.assign({}, t); delete data.id;
+      tasks.push(db.collection("tracks").doc(t.id).set(data));
+    });
+    (pending.setlists || []).forEach(function(s){
+      var data = Object.assign({}, s); delete data.id;
+      tasks.push(db.collection("setlists").doc(s.id).set(data));
+    });
+    if (!tasks.length) return;
+    Promise.all(tasks).then(function(){
+      showBanner("Lokale nummers en setlists zijn meegenomen naar de cloud-synchronisatie.", "success");
+    }).catch(function(){
+      showBanner("Niet alle lokale gegevens konden worden meegenomen naar de cloud.", "warn");
+    });
+  }
+
+  async function initStore(){
+    // 1. The Claude artifact's own shared storage, when this page is
+    //    running inside Claude.
+    try{
+      db = (window.claude && window.claude.use) ? await window.claude.use("db") : null;
+    } catch(e){ db = null; }
+    if (db){
+      usingDb = true; storeMode = "claude";
+      subscribeRemote();
+      renderSettingsPanel();
+      return;
+    }
+
+    // 2. A Firebase project — either the site's built-in default (so cloud
+    //    sync works for every visitor automatically) or a per-device custom
+    //    override — for sharing/collaboration when hosted outside Claude
+    //    (e.g. GitHub Pages). See the settings panel (gear icon).
+    var fbConfig = resolveFirebaseConfig();
+    if (fbConfig){
+      try{
+        var fbResult = await initFirebase(fbConfig);
+        db = fbResult.db; fbApp = fbResult.app;
+        usingDb = true; storeMode = "cloud";
+        renderSettingsPanel();
+        await initAuthAndSettings(fbApp);
+        renderSettingsPanel();
+        return;
+      } catch(e){
+        showBanner("Kon niet verbinden met cloud-synchronisatie (" + (e && e.message ? e.message : "onbekende fout") + "). Tijdelijk teruggevallen op lokale opslag.", "warn");
+      }
+    }
+
+    // 3. Local browser storage, or in-memory only as a last resort.
+    usingDb = false;
+    localStorageOk = probeLocalStorage();
+    if (localStorageOk){
+      loadLocal();
+      storeMode = "local";
+      showBanner("Nummers en setlists worden lokaal in deze browser bewaard (niet gedeeld). Wil je samenwerken? Verbind cloud-synchronisatie via het instellingen-icoon rechtsboven.");
+    } else {
+      storeMode = "memory";
+      showBanner("Opslag is niet beschikbaar — wijzigingen worden niet bewaard na het sluiten van deze pagina.", "warn");
+    }
+    renderLibrary(); renderSetlistsList(); renderActiveSetlist(); renderStats();
+    renderSettingsPanel();
+  }
+
+  async function addTrack(title, artist, durationSec, genre, programma){
+    var data = {title: title, artist: artist || "", genre: genre || "", durationSec: durationSec, programma: programma || "", addedAt: Date.now()};
+    if (usingDb){
+      await db.collection("tracks").add(data);
+    } else {
+      var id = uid();
+      tracksMap.set(id, Object.assign({id:id}, data));
+      persistLocal();
+      renderLibrary(); renderActiveSetlist(); renderSetlistsList(); renderStats();
+    }
+  }
+
+  async function updateTrack(id, title, artist, durationSec, genre, programma){
+    if (usingDb){
+      await db.collection("tracks").doc(id).update({title: title, artist: artist || "", genre: genre || "", durationSec: durationSec, programma: programma || ""});
+    } else {
+      var t = tracksMap.get(id);
+      if (t){
+        t.title = title; t.artist = artist || ""; t.genre = genre || ""; t.durationSec = durationSec; t.programma = programma || "";
+        persistLocal();
+        renderLibrary(); renderActiveSetlist(); renderSetlistsList();
+      }
+    }
+  }
+
+  async function deleteTrackById(id){
+    if (usingDb){
+      await db.collection("tracks").doc(id).delete();
+      var entries = Array.from(setlistsMap.entries());
+      for (var i=0;i<entries.length;i++){
+        var sid = entries[i][0], sl = entries[i][1];
+        if (sl.trackIds.indexOf(id) !== -1){
+          var newIds = sl.trackIds.filter(function(t){ return t !== id; });
+          await db.collection("setlists").doc(sid).update({trackIds:newIds, updatedAt:Date.now()});
+        }
+      }
+    } else {
+      tracksMap.delete(id);
+      setlistsMap.forEach(function(sl){
+        if (sl.trackIds.indexOf(id) !== -1){
+          sl.trackIds = sl.trackIds.filter(function(t){ return t !== id; });
+          sl.updatedAt = Date.now();
+        }
+      });
+      persistLocal();
+      renderLibrary(); renderSetlistsList(); renderActiveSetlist(); renderStats();
+    }
+  }
+
+  async function createSetlist(name){
+    var data = {name: name, date: "", trackIds: [], createdAt: Date.now(), updatedAt: Date.now(), sortIndex: Date.now()};
+    if (usingDb){
+      var ref = await db.collection("setlists").add(data);
+      activeSetlistId = ref.id;
+      renderActiveSetlist();
+      renderLibrary();
+    } else {
+      var id = uid();
+      setlistsMap.set(id, Object.assign({id:id}, data));
+      activeSetlistId = id;
+      persistLocal();
+      renderSetlistsList(); renderActiveSetlist(); renderStats();
+    }
+  }
+
+  // Dropping a library track onto the editor panel while no setlist is
+  // selected starts a new one for it, instead of the drop silently doing
+  // nothing — same "Setlist N" default name as the manual "Nieuw" button.
+  async function createSetlistWithTrack(name, trackId){
+    var data = {name: name, date: "", trackIds: [trackId], createdAt: Date.now(), updatedAt: Date.now(), sortIndex: Date.now()};
+    if (usingDb){
+      var ref = await db.collection("setlists").add(data);
+      activeSetlistId = ref.id;
+      renderActiveSetlist();
+      renderLibrary();
+    } else {
+      var id = uid();
+      setlistsMap.set(id, Object.assign({id:id}, data));
+      activeSetlistId = id;
+      persistLocal();
+      renderSetlistsList(); renderActiveSetlist(); renderStats();
+    }
+  }
+
+  async function renameSetlist(id, name){
+    if (usingDb){
+      await db.collection("setlists").doc(id).update({name:name, updatedAt:Date.now()});
+    } else {
+      var sl = setlistsMap.get(id);
+      if (sl){ sl.name = name; sl.updatedAt = Date.now(); persistLocal(); renderSetlistsList(); }
+    }
+  }
+
+  async function updateSetlistDate(id, date){
+    if (usingDb){
+      await db.collection("setlists").doc(id).update({date: date || "", updatedAt:Date.now()});
+    } else {
+      var sl = setlistsMap.get(id);
+      if (sl){ sl.date = date || ""; sl.updatedAt = Date.now(); persistLocal(); renderSetlistsList(); }
+    }
+  }
+
+  async function deleteSetlist(id){
+    if (usingDb){
+      await db.collection("setlists").doc(id).delete();
+    } else {
+      setlistsMap.delete(id);
+      persistLocal();
+    }
+    if (activeSetlistId === id) activeSetlistId = null;
+    if (!usingDb){ renderSetlistsList(); renderActiveSetlist(); renderStats(); }
+  }
+
+  async function mutateSetlist(id, updater){
+    var sl = setlistsMap.get(id);
+    if (!sl) return;
+    var newIds = updater((sl.trackIds || []).slice());
+    var seenTrackIds = new Set();
+    newIds = newIds.filter(function(trackId){
+      if (seenTrackIds.has(trackId)) return false;
+      seenTrackIds.add(trackId);
+      return true;
+    });
+
+    // Update the in-memory setlist immediately as well. This is important
+    // for the library filter: when a track is added to the active setlist,
+    // renderLibrary() must see the new trackIds regardless of whether the
+    // app uses the local store or Firestore.
+    sl.trackIds = newIds;
+    sl.updatedAt = Date.now();
+
+    if (usingDb){
+      await db.collection("setlists").doc(id).update({trackIds:newIds, updatedAt:sl.updatedAt});
+    } else {
+      persistLocal();
+    }
+
+    renderSetlistsList();
+    renderActiveSetlist();
+    renderLibrary();
+  }
+
+  // ---------- render ----------
+  function renderStats(){
+    var songTotal = Array.from(tracksMap.values()).filter(function(t){ return t.genre !== "Praatje"; }).length;
+    statTracksEl.textContent = songTotal + " " + plural(songTotal, "nummer", "nummers");
+    statSetlistsEl.textContent = setlistsMap.size + " " + plural(setlistsMap.size, "setlist", "setlists");
+  }
+
+  // Tracks with the "Praatje" genre (a spoken interlude, not a song) sort
+  // to the bottom of the library regardless of title, since they aren't
+  // part of the regular repertoire to browse alphabetically.
+  function sortedTracks(){
+    return Array.from(tracksMap.values()).sort(function(a,b){
+      var aPraatje = (a.genre || "") === "Praatje";
+      var bPraatje = (b.genre || "") === "Praatje";
+      if (aPraatje !== bPraatje) return aPraatje ? 1 : -1;
+      return a.title.localeCompare(b.title, "nl", {sensitivity:"base"});
+    });
+  }
+
+  function distinctGenres(){
+    var set = new Set();
+    tracksMap.forEach(function(t){ if (t.genre) set.add(t.genre); });
+    return Array.from(set).sort(function(a,b){ return a.localeCompare(b, "nl", {sensitivity:"base"}); });
+  }
+
+  function updateGenreFilterLabel(){
+    var labelEl = document.getElementById("genre-filter-label");
+    if (!labelEl) return;
+    var n = libraryGenreFilters.size;
+    if (n === 0) labelEl.textContent = "Alle genres";
+    else if (n === 1) labelEl.textContent = Array.from(libraryGenreFilters)[0];
+    else labelEl.textContent = n + " genres";
+  }
+
+  function updateGenreControls(){
+    var genres = distinctGenres();
+    var stale = [];
+    libraryGenreFilters.forEach(function(g){ if (genres.indexOf(g) === -1) stale.push(g); });
+    stale.forEach(function(g){ libraryGenreFilters.delete(g); });
+
+    var popoverEl = document.getElementById("genre-filter-popover");
+    if (popoverEl){
+      if (genres.length === 0){
+        popoverEl.innerHTML = '<p class="hint" style="margin:4px 8px;">Nog geen genres.</p>';
+      } else {
+        popoverEl.innerHTML = genres.map(function(g){
+          var checked = libraryGenreFilters.has(g);
+          return '<label class="genre-filter-option">' +
+            '<input type="checkbox" value="' + escapeHtml(g) + '"' + (checked ? ' checked' : '') + '>' +
+            '<span>' + escapeHtml(g) + '</span>' +
+          '</label>';
+        }).join("") + (libraryGenreFilters.size > 0
+          ? '<button type="button" class="btn btn-ghost btn-small" id="genre-filter-clear">Filter wissen</button>'
+          : '');
+      }
+    }
+    updateGenreFilterLabel();
+
+    var datalistEl = document.getElementById("genre-datalist");
+    if (datalistEl){
+      datalistEl.innerHTML = genres.map(function(g){ return '<option value="' + escapeHtml(g) + '"></option>'; }).join("");
+    }
+  }
+
+  function renderLibrary(){
+    if (editingTrackId && !tracksMap.has(editingTrackId)) editingTrackId = null;
+    updateGenreControls();
+
+    var term = librarySearchTerm.trim().toLowerCase();
+    var activeTrackIds = new Set();
+    if (activeSetlistId){
+      var activeSl = setlistsMap.get(activeSetlistId);
+      if (activeSl && Array.isArray(activeSl.trackIds)){
+        activeSl.trackIds.forEach(function(id){ activeTrackIds.add(id); });
+      }
+    }
+    var list = sortedTracks().filter(function(t){
+      var alreadyInActiveSetlist = activeTrackIds.has(t.id);
+      var matchesTerm = !term || t.title.toLowerCase().indexOf(term) !== -1 || (t.artist||"").toLowerCase().indexOf(term) !== -1;
+      var matchesGenre = libraryGenreFilters.size === 0 || libraryGenreFilters.has(t.genre || "");
+      return !alreadyInActiveSetlist && matchesTerm && matchesGenre;
+    });
+
+    if (tracksMap.size === 0){
+      libraryListEl.innerHTML = '<div class="empty-state"><strong>Nog geen nummers</strong>Upload een bestand of voeg hierboven een nummer toe.</div>';
+      return;
+    }
+    if (list.length === 0){
+      var genreReason = libraryGenreFilters.size > 0
+        ? 'genre ' + Array.from(libraryGenreFilters).map(function(g){ return '“' + escapeHtml(g) + '”'; }).join(', ')
+        : '';
+      var reason = term ? '“' + escapeHtml(librarySearchTerm) + '”' : genreReason;
+      libraryListEl.innerHTML = '<div class="empty-state">Geen nummers gevonden' + (reason ? ' voor ' + reason : '') + '.</div>';
+      return;
+    }
+    libraryListEl.innerHTML = list.map(function(t){
+      if (t.id === editingTrackId){
+        return '' +
+          '<div class="track-item editing" data-track-id="' + t.id + '">' +
+            '<span class="drag-handle" aria-hidden="true" style="visibility:hidden">' + ICON_HANDLE + '</span>' +
+            '<input type="text" class="input track-edit-title" id="edit-title-' + t.id + '" value="' + escapeHtml(t.title) + '" aria-label="Titel bewerken" placeholder="Titel">' +
+            '<input type="text" class="input track-edit-artist" id="edit-artist-' + t.id + '" value="' + escapeHtml(t.artist || "") + '" aria-label="Artiest bewerken" placeholder="Artiest">' +
+            '<input type="text" class="input track-edit-genre" id="edit-genre-' + t.id + '" value="' + escapeHtml(t.genre || "") + '" aria-label="Genre bewerken" placeholder="Genre" list="genre-datalist">' +
+            '<input type="text" class="input track-edit-programma" id="edit-programma-' + t.id + '" value="' + escapeHtml(t.programma || "") + '" aria-label="Programma bewerken" placeholder="Programma">' +
+            '<input type="text" class="input input-duration mono track-edit-duration" id="edit-duration-' + t.id + '" value="' + formatDuration(t.durationSec) + '" aria-label="Duur bewerken (mm:ss)">' +
+            '<button type="button" class="icon-btn" data-action="save-track-edit" data-id="' + t.id + '" aria-label="Wijzigingen opslaan" title="Opslaan">' + ICON_CHECK + '</button>' +
+            '<button type="button" class="icon-btn danger' + (pendingConfirm.has("track:" + t.id) ? " confirming" : "") + '" data-action="delete-track" data-id="' + t.id + '" aria-label="' + (pendingConfirm.has("track:" + t.id) ? "Klik nogmaals om te bevestigen" : "Nummer verwijderen") + '" title="' + (pendingConfirm.has("track:" + t.id) ? "Klik nogmaals om te verwijderen" : "Nummer verwijderen") + '">' + ICON_TRASH + '</button>' +
+            '<button type="button" class="icon-btn" data-action="cancel-track-edit" data-id="' + t.id + '" aria-label="Bewerken annuleren" title="Annuleren">' + ICON_X + '</button>' +
+          '</div>';
+      }
+      var key = "track:" + t.id;
+      var confirming = pendingConfirm.has(key);
+      return '' +
+        '<div class="track-item" draggable="true" data-track-id="' + t.id + '">' +
+          '<span class="drag-handle" aria-hidden="true">' + ICON_HANDLE + '</span>' +
+          '<span class="track-info">' +
+            '<span class="track-title">' + escapeHtml(t.title) + '</span>' +
+            (t.artist ? '<span class="track-artist">' + escapeHtml(t.artist) + '</span>' : '') +
+          '</span>' +
+          (showProgrammaInLibrary && t.programma ? '<span class="track-programma mono" title="Programma">' + escapeHtml(t.programma) + '</span>' : '') +
+          '<span class="track-duration mono">' + formatDuration(t.durationSec) + '</span>' +
+          '<button type="button" class="icon-btn" data-action="edit-track" data-id="' + t.id + '" aria-label="Nummer bewerken" title="Bewerken">' + ICON_PENCIL + '</button>' +
+          '<button type="button" class="icon-btn quick-add" data-action="quick-add" data-id="' + t.id + '" aria-label="Toevoegen aan actieve setlist" title="Toevoegen aan actieve setlist">' + ICON_PLUS + '</button>' +
+        '</div>';
+    }).join("");
+
+    if (editingTrackId){
+      var ti = document.getElementById("edit-title-" + editingTrackId);
+      if (ti){ ti.focus(); ti.select(); }
+    }
+  }
+
+  function renderNewSetlistForm(){
+    if (!creatingSetlist){ newSetlistSlotEl.innerHTML = ""; return; }
+    var nextNum = setlistsMap.size + 1;
+    newSetlistSlotEl.innerHTML = '' +
+      '<form id="create-setlist-form" class="new-setlist-form">' +
+        '<input type="text" class="input" id="new-setlist-name" placeholder="Naam van de setlist" value="Setlist ' + nextNum + '" autocomplete="off" required>' +
+        '<button type="submit" class="btn btn-accent btn-small">Aanmaken</button>' +
+        '<button type="button" class="btn btn-ghost btn-small" id="cancel-new-setlist">Annuleren</button>' +
+      '</form>';
+    var input = document.getElementById("new-setlist-name");
+    if (input){ input.focus(); input.select(); }
+  }
+
+  function sortSetlists(items){
+    var byManual = function(a,b){
+      var av = typeof a.sortIndex === "number" ? a.sortIndex : (a.createdAt||0);
+      var bv = typeof b.sortIndex === "number" ? b.sortIndex : (b.createdAt||0);
+      return av - bv;
+    };
+    return items.sort(byManual);
+  }
+
+  // Rewrites sortIndex sequentially for every setlist in the given final
+  // order, so the manual arrangement persists (shared, when using a
+  // remote store) rather than being a purely local/visual reorder.
+  async function reorderSetlistsManual(orderedIds){
+    if (usingDb){
+      await Promise.all(orderedIds.map(function(id, i){
+        return db.collection("setlists").doc(id).update({sortIndex: i});
+      }));
+    } else {
+      orderedIds.forEach(function(id, i){
+        var sl = setlistsMap.get(id);
+        if (sl) sl.sortIndex = i;
+      });
+      persistLocal();
+      renderSetlistsList();
+    }
+  }
+
+  function renderSetlistsList(){
+    if (renamingSetlistId && !setlistsMap.has(renamingSetlistId)) renamingSetlistId = null;
+    renderNewSetlistForm();
+    var filterCheckbox = document.getElementById("show-future-setlists-only");
+    if (filterCheckbox) filterCheckbox.checked = showFutureSetlistsOnly;
+    var items = sortSetlists(Array.from(setlistsMap.values()));
+    if (showFutureSetlistsOnly){
+      var today = new Date();
+      var todayKey = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+      items = items.filter(function(sl){ return !sl.date || sl.date >= todayKey; });
+    }
+    if (items.length === 0){
+      setlistsListEl.innerHTML = showFutureSetlistsOnly
+        ? '<div class="empty-state"><strong>Geen toekomstige setlists</strong>Er zijn geen setlists met een datum vanaf vandaag.</div>'
+        : '<div class="empty-state"><strong>Nog geen setlists</strong>Klik op “Nieuw” om je eerste setlist te maken.</div>';
+      return;
+    }
+    setlistsListEl.innerHTML = items.map(function(sl){
+      var count = songCount(sl);
+      if (sl.id === renamingSetlistId){
+        return '' +
+          '<div class="setlist-row renaming" data-id="' + sl.id + '">' +
+            '<input type="text" class="input setlist-rename-input" id="rename-setlist-' + sl.id + '" value="' + escapeHtml(sl.name) + '" aria-label="Naam van de setlist bewerken">' +
+            '<button type="button" class="icon-btn" data-action="save-setlist-rename" data-id="' + sl.id + '" aria-label="Naam opslaan" title="Opslaan">' + ICON_CHECK + '</button>' +
+            '<button type="button" class="icon-btn" data-action="cancel-setlist-rename" data-id="' + sl.id + '" aria-label="Annuleren" title="Annuleren">' + ICON_X + '</button>' +
+          '</div>';
+      }
+      var key = "setlist:" + sl.id;
+      var confirming = pendingConfirm.has(key);
+      var manual = true;
+      return '' +
+        '<div class="setlist-row' + (sl.id === activeSetlistId ? ' active' : '') + (manual ? ' manual' : '') + '"' +
+          (manual ? ' draggable="true"' : '') +
+          ' data-action="select-setlist" data-id="' + sl.id + '" role="button" tabindex="0">' +
+          (manual ? '<span class="drag-handle" aria-hidden="true">' + ICON_HANDLE + '</span>' : '') +
+          '<span class="setlist-row-main">' +
+            '<span class="setlist-row-name">' + escapeHtml(sl.name) + '</span>' +
+            '<span class="setlist-row-meta">' + (sl.date ? formatDateNl(sl.date) + ' · ' : '') + count + ' ' + plural(count,'nummer','nummers') + ' · ' + formatDuration(totalDurationFor(sl)) + '</span>' +
+          '</span>' +
+          '<button type="button" class="icon-btn" data-action="rename-setlist" data-id="' + sl.id + '" aria-label="Naam wijzigen" title="Naam wijzigen">' + ICON_PENCIL + '</button>' +
+          '<button type="button" class="icon-btn danger' + (confirming ? ' confirming' : '') + '" data-action="delete-setlist" data-id="' + sl.id + '" aria-label="' + (confirming ? "Klik nogmaals om te bevestigen" : "Setlist verwijderen") + '" title="Verwijderen">' + ICON_TRASH + '</button>' +
+        '</div>';
+    }).join("");
+
+    if (renamingSetlistId){
+      var ri = document.getElementById("rename-setlist-" + renamingSetlistId);
+      if (ri){ ri.focus(); ri.select(); }
+    }
+  }
+
+  function renderActiveSetlist(){
+    var sl = activeSetlistId ? setlistsMap.get(activeSetlistId) : null;
+    var activeHeading = document.getElementById("active-setlist-heading");
+    if (activeHeading) activeHeading.textContent = sl ? (sl.name || "Actieve setlist") : "Actieve setlist";
+    if (!sl){
+      editorPanelEl.innerHTML = '<div class="editor-empty" id="editor-empty-dropzone"><strong style="font-family:\'Poppins\',sans-serif;font-size:1.1rem;color:var(--text);">Geen setlist geselecteerd</strong><span>Kies een setlist links, maak een nieuwe aan, of sleep een nummer hierheen om er meteen een te starten.</span></div>';
+      return;
+    }
+    var trackCount = sl.trackIds.length;
+    var count = songCount(sl);
+    var total = totalDurationFor(sl);
+    var valid = count >= 3;
+    var needed = Math.max(0, 3 - count);
+
+    var songPosition = 0;
+    var itemsHtml = sl.trackIds.map(function(tid, idx){
+      var t = tracksMap.get(tid);
+      var missing = !t;
+      var isPraatje = !missing && t.genre === "Praatje";
+      var position = isPraatje ? "" : (++songPosition);
+      return '' +
+        '<div class="setlist-track-item' + (missing ? ' missing' : '') + '" draggable="true" data-index="' + idx + '">' +
+          '<span class="drag-handle" aria-hidden="true">' + ICON_HANDLE + '</span>' +
+          '<span class="track-position mono">' + position + '</span>' +
+          '<span class="track-info">' +
+            '<span class="track-title">' + (missing ? '(verwijderd nummer)' : escapeHtml(t.title)) + '</span>' +
+            (!missing && t.artist ? '<span class="track-artist">' + escapeHtml(t.artist) + '</span>' : '') +
+          '</span>' +
+          (showProgrammaInLibrary && !missing && t.programma ? '<span class="track-programma mono" title="Programma">' + escapeHtml(t.programma) + '</span>' : '') +
+          '<span class="track-duration mono">' + formatDuration(missing ? 0 : t.durationSec) + '</span>' +
+          '<button type="button" class="icon-btn danger" data-action="remove-track" data-index="' + idx + '" aria-label="Verwijderen uit setlist" title="Verwijderen uit setlist">' + ICON_TRASH + '</button>' +
+        '</div>';
+    }).join("");
+
+    if (!itemsHtml){
+      itemsHtml = '<p class="drop-hint">Sleep nummers hierheen vanuit je bibliotheek, of voeg een nummer toe via de + knop hierboven.</p>';
+    }
+
+    editorPanelEl.innerHTML = '' +
+      '<div class="editor-header">' +
+        '<div class="editor-title-row">' +
+          '<input type="date" id="setlist-date-input" value="' + escapeHtml(sl.date || "") + '" aria-label="Datum van de setlist">' +
+          '<span class="badge badge-duration">' + formatDuration(total) + '</span>' +
+          '<button type="button" class="btn btn-small mobile-download-btn" data-action="export-setlist" aria-label="Download setlist" title="Download setlist"' + (valid ? '' : ' disabled title="Minimaal 3 nummers nodig om te exporteren"') + '>' + ICON_DOWNLOAD + '<span class="mobile-download-label"></span></button>' +
+          (tracksMap.size === 0 ? '' :
+            '<button type="button" class="btn btn-accent" id="open-add-existing-track-btn" aria-label="Nummer toevoegen aan setlist" title="Nummer toevoegen aan setlist">' + ICON_PLUS + '</button>') +
+        '</div>' +
+      '</div>' +
+      '<div id="setlist-track-list">' + itemsHtml + '</div>';
+  }
+
+  // ---------- CSV import/export ----------
+  // Expected columns: titel, duur(mm:ss), duur(sec) — comma- or semicolon-separated.
+  // duur(sec) wins when present and numeric; duur(mm:ss) is the fallback.
+  function parseCsvLine(line, delim){
+    var result = [];
+    var cur = "";
+    var inQuotes = false;
+    for (var i=0;i<line.length;i++){
+      var ch = line[i];
+      if (inQuotes){
+        if (ch === '"'){
+          if (line[i+1] === '"'){ cur += '"'; i++; }
+          else inQuotes = false;
+        } else cur += ch;
+      } else {
+        if (ch === '"') inQuotes = true;
+        else if (ch === delim){ result.push(cur); cur = ""; }
+        else cur += ch;
+      }
+    }
+    result.push(cur);
+    return result;
+  }
+  function detectDelimiter(sampleLine){
+    var commas = (sampleLine.match(/,/g)||[]).length;
+    var semis = (sampleLine.match(/;/g)||[]).length;
+    return semis > commas ? ";" : ",";
+  }
+  function importCsvText(text){
+    var lines = text.split(/\r\n|\n|\r/).filter(function(l){ return l.trim() !== ""; });
+    if (lines.length === 0) return {rows:[], added:0, skipped:0};
+    var delim = detectDelimiter(lines[0]);
+    var rows = [];
+    var added = 0, skipped = 0;
+    lines.forEach(function(line, idx){
+      var fields = parseCsvLine(line, delim);
+      var title = (fields[0]||"").trim().replace(/^["']|["']$/g, "");
+      var mmss = (fields[1]||"").trim().replace(/^["']|["']$/g, "");
+      var secField = (fields[2]||"").trim().replace(/^["']|["']$/g, "");
+      var artist = (fields[3]||"").trim().replace(/^["']|["']$/g, "");
+      var genre = (fields[4]||"").trim().replace(/^["']|["']$/g, "");
+      if (idx === 0 && /^titel$|^title$/i.test(title)) return; // header row, ignore silently
+      var durationSec = null;
+      if (secField && /^\d+$/.test(secField)) durationSec = parseInt(secField, 10);
+      else if (mmss) durationSec = parseDuration(mmss);
+      if (!title || durationSec == null || durationSec <= 0){ skipped++; return; }
+      added++;
+      rows.push({title:title, artist:artist, genre:genre, durationSec:durationSec});
+    });
+    return {rows: rows, added: added, skipped: skipped};
+  }
+
+  async function handleFileImport(file){
+    var text = await file.text();
+    var result = importCsvText(text);
+    if (result.rows.length === 0){
+      showBanner("Geen geldige regels gevonden. Verwachte kolommen: titel, duur(mm:ss), duur(sec), artiest, genre — gescheiden door komma of puntkomma.", "warn");
+      return;
+    }
+    showBanner("Bezig met importeren…");
+    for (var i=0;i<result.rows.length;i++){
+      await addTrack(result.rows[i].title, result.rows[i].artist, result.rows[i].durationSec, result.rows[i].genre);
+    }
+    var msg = result.added + " " + plural(result.added,"nummer","nummers") + " toegevoegd";
+    if (result.skipped > 0) msg += ", " + result.skipped + " " + plural(result.skipped,"regel","regels") + " overgeslagen (onherkenbaar formaat)";
+    showBanner(msg + ".", "success");
+  }
+
+  // ---------- Setlists import (Word/.docx) ----------
+  // Reads an existing multi-page setlist document — one setlist per page,
+  // pages separated by a manual page break, a "page break before"
+  // paragraph setting, or a section break — and turns each page into its
+  // own setlist. Track lines are matched against the existing library by
+  // title (and artist, when known) so re-importing doesn't duplicate
+  // library entries; unmatched tracks are added to the library.
+  function docxLocalName(el){
+    return el.localName || String(el.nodeName || "").replace(/^.*:/, "");
+  }
+
+  function docxParagraphText(pEl){
+    var text = "";
+    (function walk(node){
+      var children = node.childNodes;
+      for (var i=0; i<children.length; i++){
+        var child = children[i];
+        if (child.nodeType !== 1) continue;
+        var ln = docxLocalName(child);
+        if (ln === "t"){
+          text += child.textContent || "";
+        } else if (ln === "tab"){
+          text += " ";
+        } else if (ln === "br" || ln === "cr"){
+          var brType = child.getAttribute && (child.getAttribute("w:type") || child.getAttribute("type"));
+          text += (brType === "page") ? "\f" : "\n";
+        } else if (ln !== "pPr" && ln !== "rPr"){
+          walk(child);
+        }
+      }
+    })(pEl);
+    return text;
+  }
+
+  function extractDocxPages(documentXmlText){
+    var xmlDoc = new DOMParser().parseFromString(documentXmlText, "application/xml");
+    if (xmlDoc.getElementsByTagName("parsererror").length){
+      throw new Error("Kon het Word-bestand niet lezen (onherkenbare inhoud)");
+    }
+    var body = null;
+    var all = xmlDoc.getElementsByTagName("*");
+    for (var i=0; i<all.length; i++){
+      if (docxLocalName(all[i]) === "body"){ body = all[i]; break; }
+    }
+    if (!body) throw new Error("Geen documentinhoud gevonden in het Word-bestand");
+
+    var pages = [];
+    var currentLines = [];
+    function pushLine(line){
+      line = line.replace(/\s+/g, " ").trim();
+      if (line) currentLines.push(line);
+    }
+    function endPage(){
+      if (currentLines.length) pages.push(currentLines.join("\n"));
+      currentLines = [];
+    }
+
+    var children = body.children;
+    for (var c=0; c<children.length; c++){
+      var el = children[c];
+      if (docxLocalName(el) !== "p") continue;
+      var pPr = null;
+      for (var k=0; k<el.children.length; k++){
+        if (docxLocalName(el.children[k]) === "pPr"){ pPr = el.children[k]; break; }
+      }
+      var hasPageBreakBefore = false, hasSectPr = false;
+      if (pPr){
+        for (var m=0; m<pPr.children.length; m++){
+          var pn = docxLocalName(pPr.children[m]);
+          if (pn === "pageBreakBefore") hasPageBreakBefore = true;
+          if (pn === "sectPr") hasSectPr = true;
+        }
+      }
+      if (hasPageBreakBefore) endPage();
+
+      var raw = docxParagraphText(el);
+      var segments = raw.split("\f");
+      for (var s=0; s<segments.length; s++){
+        if (s > 0) endPage();
+        // A plain <w:br/> inside this paragraph (e.g. between a track's
+        // title and its "artiest – duur" line) becomes "\n" in the raw
+        // text above — split on it too, so each becomes its own line
+        // instead of being collapsed into one by pushLine's whitespace trim.
+        var segLines = segments[s].split("\n");
+        for (var sl=0; sl<segLines.length; sl++){
+          pushLine(segLines[sl]);
+        }
+      }
+
+      if (hasSectPr) endPage();
+    }
+    endPage();
+    return pages;
+  }
+
+  // Strips a line that repeats identically across most pages (e.g. a
+  // "JEROEN & IRENE" heading printed at the top of every page) so it isn't
+  // mistaken for a setlist name or a track.
+  function stripRepeatedHeaderLines(pageLineArrays){
+    if (pageLineArrays.length < 2) return pageLineArrays;
+    var firstLineCounts = new Map();
+    pageLineArrays.forEach(function(lines){
+      if (!lines.length) return;
+      var key = lines[0].toLowerCase();
+      firstLineCounts.set(key, (firstLineCounts.get(key) || 0) + 1);
+    });
+    var threshold = Math.max(2, Math.ceil(pageLineArrays.length / 2));
+    return pageLineArrays.map(function(lines){
+      if (lines.length && firstLineCounts.get(lines[0].toLowerCase()) >= threshold){
+        return lines.slice(1);
+      }
+      return lines;
+    });
+  }
+
+  var DOCX_IMPORT_DURATION_RE = /(\d{1,2}:[0-5]\d:[0-5]\d|\d{1,2}:[0-5]\d)/;
+  var DOCX_IMPORT_SEP_RE = /\s[–—-]\s/;
+
+  // Duration-anchored line parser: a track is either two lines (a title
+  // line with no duration, followed by an "artiest – mm:ss" line — the
+  // shape our own exports use) or one line that has both ("Titel – Artiest
+  // – 3:45"). Whichever line carries the duration closes out the track.
+  function parseImportedTrackLines(lines){
+    var tracks = [];
+    var pendingTitle = null;
+    function flushPendingAsTitleOnly(){
+      if (pendingTitle){
+        tracks.push({title: pendingTitle, artist: "", durationSec: 0, durationKnown: false});
+        pendingTitle = null;
+      }
+    }
+    lines.forEach(function(rawLine){
+      var line = rawLine.replace(/^\d+[.)]\s*/, "").trim();
+      if (!line) return;
+      var durMatch = line.match(DOCX_IMPORT_DURATION_RE);
+      if (!durMatch){
+        flushPendingAsTitleOnly();
+        pendingTitle = line;
+        return;
+      }
+      var durationSec = parseDuration(durMatch[1]);
+      var rest = (line.slice(0, durMatch.index) + line.slice(durMatch.index + durMatch[0].length))
+        .replace(/[()]/g, " ")
+        .trim()
+        .replace(/^[–—-]\s*/, "")
+        .replace(/\s*[–—-]$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (pendingTitle){
+        tracks.push({title: pendingTitle, artist: rest, durationSec: durationSec || 0, durationKnown: durationSec != null});
+        pendingTitle = null;
+        return;
+      }
+      if (!rest) return; // a line that's only a duration, nothing to anchor it to
+      var parts = rest.split(DOCX_IMPORT_SEP_RE);
+      var title = parts.shift().trim();
+      var artist = parts.join(" – ").trim();
+      if (title){
+        tracks.push({title: title, artist: artist, durationSec: durationSec || 0, durationKnown: durationSec != null});
+      }
+    });
+    flushPendingAsTitleOnly();
+    return tracks;
+  }
+
+  function findExistingTrackId(matchIndex, title, artist){
+    var key = (title||"").trim().toLowerCase() + "|" + (artist||"").trim().toLowerCase();
+    if (matchIndex.byTitleArtist.has(key)) return matchIndex.byTitleArtist.get(key);
+    var titleOnlyKey = (title||"").trim().toLowerCase();
+    if (matchIndex.byTitle.has(titleOnlyKey)) return matchIndex.byTitle.get(titleOnlyKey);
+    return null;
+  }
+
+  async function importTrackForSetlist(matchIndex, title, artist, durationSec){
+    var existingId = findExistingTrackId(matchIndex, title, artist);
+    if (existingId) return existingId;
+    var data = {title: title, artist: artist || "", genre: "", durationSec: durationSec || 0, programma: "", addedAt: Date.now()};
+    var id;
+    if (usingDb){
+      var ref = await db.collection("tracks").add(data);
+      id = ref.id;
+    } else {
+      id = uid();
+    }
+    tracksMap.set(id, Object.assign({id:id}, data));
+    matchIndex.byTitleArtist.set((title||"").trim().toLowerCase() + "|" + (artist||"").trim().toLowerCase(), id);
+    var titleOnlyKey = (title||"").trim().toLowerCase();
+    if (!matchIndex.byTitle.has(titleOnlyKey)) matchIndex.byTitle.set(titleOnlyKey, id);
+    return id;
+  }
+
+  async function importCreateSetlist(name, trackIds, sortIndex){
+    var data = {name: name, date: "", trackIds: trackIds, createdAt: Date.now(), updatedAt: Date.now(), sortIndex: sortIndex};
+    if (usingDb){
+      var ref = await db.collection("setlists").add(data);
+      setlistsMap.set(ref.id, Object.assign({id:ref.id}, data));
+      return ref.id;
+    }
+    var id = uid();
+    setlistsMap.set(id, Object.assign({id:id}, data));
+    return id;
+  }
+
+  async function handleSetlistDocxImport(file){
+    showBanner("Bezig met het lezen van het Word-bestand…");
+    var JSZipCtor;
+    try{
+      JSZipCtor = await loadJsZip();
+    } catch(e){
+      showBanner("Kon JSZip niet laden om het Word-bestand te lezen. Controleer je internetverbinding.", "warn");
+      return;
+    }
+    var pages;
+    try{
+      var buffer = await file.arrayBuffer();
+      var zip = await JSZipCtor.loadAsync(buffer);
+      var docEntry = zip.file("word/document.xml");
+      if (!docEntry) throw new Error("Dit lijkt geen geldig Word-bestand (.docx) te zijn");
+      var xmlText = await docEntry.async("string");
+      pages = extractDocxPages(xmlText);
+    } catch(e){
+      showBanner("Kon het Word-bestand niet verwerken: " + (e && e.message ? e.message : "onbekende fout") + ".", "warn");
+      return;
+    }
+    if (pages.length === 0){
+      showBanner("Geen pagina's met inhoud gevonden in het Word-bestand.", "warn");
+      return;
+    }
+
+    var pageLineArrays = stripRepeatedHeaderLines(pages.map(function(p){
+      return p.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+    }));
+
+    var matchIndex = {byTitleArtist: new Map(), byTitle: new Map()};
+    tracksMap.forEach(function(t, id){
+      var key = (t.title||"").trim().toLowerCase() + "|" + (t.artist||"").trim().toLowerCase();
+      matchIndex.byTitleArtist.set(key, id);
+      var titleKey = (t.title||"").trim().toLowerCase();
+      if (!matchIndex.byTitle.has(titleKey)) matchIndex.byTitle.set(titleKey, id);
+    });
+
+    var maxSortIndex = 0;
+    setlistsMap.forEach(function(sl){
+      if (typeof sl.sortIndex === "number" && sl.sortIndex > maxSortIndex) maxSortIndex = sl.sortIndex;
+    });
+
+    var setlistsCreated = 0, tracksMatched = 0, tracksCreated = 0, pagesSkipped = 0, tracksNeedDuration = 0;
+
+    for (var p=0; p<pageLineArrays.length; p++){
+      var lines = pageLineArrays[p].filter(function(l){ return !/^totale?\s*duur/i.test(l); });
+      if (!lines.length){ pagesSkipped++; continue; }
+      var name = lines[0];
+      var trackLines = lines.slice(1);
+      var parsedTracks = parseImportedTrackLines(trackLines);
+      if (parsedTracks.length === 0){ pagesSkipped++; continue; }
+
+      var trackIds = [];
+      for (var t=0; t<parsedTracks.length; t++){
+        var pt = parsedTracks[t];
+        var existed = findExistingTrackId(matchIndex, pt.title, pt.artist) != null;
+        var id = await importTrackForSetlist(matchIndex, pt.title, pt.artist, pt.durationSec);
+        trackIds.push(id);
+        if (existed) tracksMatched++; else tracksCreated++;
+        if (!pt.durationKnown) tracksNeedDuration++;
+      }
+
+      maxSortIndex += 1;
+      await importCreateSetlist(name || ("Geïmporteerde setlist " + (setlistsCreated+1)), trackIds, maxSortIndex);
+      setlistsCreated++;
+    }
+
+    if (!usingDb) persistLocal();
+    renderLibrary(); renderSetlistsList(); renderActiveSetlist(); renderStats();
+
+    if (setlistsCreated === 0){
+      showBanner("Er konden geen setlists worden herkend in dit Word-bestand.", "warn");
+      return;
+    }
+    var msg = setlistsCreated + " " + plural(setlistsCreated,"setlist","setlists") + " geïmporteerd" +
+      " (" + tracksMatched + " " + plural(tracksMatched,"nummer","nummers") + " herkend uit je bibliotheek, " +
+      tracksCreated + " nieuw toegevoegd)";
+    if (tracksNeedDuration > 0){
+      msg += ". Let op: bij " + tracksNeedDuration + " " + plural(tracksNeedDuration,"nummer","nummers") +
+        " kon geen duur worden herkend — pas deze aan in de bibliotheek.";
+    } else {
+      msg += ".";
+    }
+    if (pagesSkipped > 0){
+      msg += " " + pagesSkipped + " lege of onherkenbare " + plural(pagesSkipped,"pagina","pagina's") + " overgeslagen.";
+    }
+    showBanner(msg, tracksNeedDuration > 0 ? "warn" : "success");
+  }
+
+  function buildSetlistCsv(sl){
+    var rows = [["#","Titel","Artiest","Duur (mm:ss)"]];
+    var total = 0;
+    sl.trackIds.forEach(function(tid, i){
+      var t = tracksMap.get(tid);
+      var title = t ? t.title : "(verwijderd nummer)";
+      var artist = t ? (t.artist || "") : "";
+      var dur = t ? t.durationSec : 0;
+      total += dur;
+      rows.push([String(i+1), title, artist, formatDuration(dur)]);
+    });
+    rows.push(["", "Totale duur", "", formatDuration(total)]);
+    return "﻿" + rows.map(function(r){ return r.map(csvEscape).join(";"); }).join("\r\n");
+  }
+
+  // Plain-browser fallback (works on a normal host like GitHub Pages;
+  // inert inside the Claude artifact sandbox, where `downloads` is used instead).
+  function downloadBlobViaBrowser(blob, filename){
+    try{
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      return true;
+    } catch(e){ return false; }
+  }
+
+  // Saves a blob for the user, preferring the Claude artifact's own
+  // download capability (same as track/setlist exports) and falling back
+  // to a plain-browser download outside Claude.
+  async function saveFileForUser(blob, filename){
+    try{
+      var downloads = (window.claude && window.claude.use) ? await window.claude.use("downloads") : null;
+      if (downloads){
+        await downloads.save({filename: filename, data: blob});
+        return true;
+      }
+    } catch(e){
+      if (e && e.code === "declined") return false;
+      // fall through to the plain-browser download below
+    }
+    return downloadBlobViaBrowser(blob, filename);
+  }
+
+  // ---------- full backup (export/import of everything) ----------
+  function buildBackupPayload(){
+    return {
+      app: "setlist-studio-backup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      tracks: Array.from(tracksMap.values()),
+      setlists: Array.from(setlistsMap.values())
+    };
+  }
+
+  async function handleBackupExport(){
+    var payload = buildBackupPayload();
+    var json = JSON.stringify(payload, null, 2);
+    var blob = new Blob([json], {type:"application/json;charset=utf-8;"});
+    var stamp = new Date().toISOString().slice(0,10);
+    var ok = await saveFileForUser(blob, "setlist-studio-backup-" + stamp + ".json");
+    if (ok){
+      showBanner("Back-up gedownload (" + payload.tracks.length + " " + plural(payload.tracks.length,"nummer","nummers") + ", " + payload.setlists.length + " " + plural(payload.setlists.length,"setlist","setlists") + ").", "success");
+    } else {
+      showBanner("Back-up downloaden is niet gelukt.", "warn");
+    }
+  }
+
+  // Fully replaces the library and all setlists with the contents of a
+  // backup, preserving original ids so setlists keep pointing at the right
+  // tracks. In cloud mode the live onSnapshot listeners pick the change up
+  // and re-render automatically once the writes land.
+  async function restoreFromBackup(payload){
+    var tracks = Array.isArray(payload.tracks) ? payload.tracks.filter(function(t){ return t && t.id; }) : [];
+    var setlists = Array.isArray(payload.setlists) ? payload.setlists.filter(function(s){ return s && s.id; }) : [];
+
+    if (usingDb){
+      var deleteTasks = [];
+      tracksMap.forEach(function(t){ deleteTasks.push(db.collection("tracks").doc(t.id).delete()); });
+      setlistsMap.forEach(function(s){ deleteTasks.push(db.collection("setlists").doc(s.id).delete()); });
+      await Promise.all(deleteTasks);
+
+      var writeTasks = [];
+      tracks.forEach(function(t){
+        var data = Object.assign({}, t); delete data.id;
+        writeTasks.push(db.collection("tracks").doc(t.id).set(data));
+      });
+      setlists.forEach(function(s){
+        var data = Object.assign({}, s); delete data.id;
+        writeTasks.push(db.collection("setlists").doc(s.id).set(data));
+      });
+      await Promise.all(writeTasks);
+    } else {
+      tracksMap.clear();
+      setlistsMap.clear();
+      tracks.forEach(function(t){ tracksMap.set(t.id, t); });
+      setlists.forEach(function(s){ setlistsMap.set(s.id, s); });
+      activeSetlistId = null;
+      persistLocal();
+      renderLibrary(); renderSetlistsList(); renderActiveSetlist(); renderStats();
+    }
+    renderSettingsPanel();
+    showBanner("Back-up hersteld: " + tracks.length + " " + plural(tracks.length,"nummer","nummers") + " en " + setlists.length + " " + plural(setlists.length,"setlist","setlists") + ".", "success");
+  }
+
+  function handleBackupImportFile(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      var payload;
+      try{ payload = JSON.parse(String(reader.result)); }
+      catch(e){ showBanner("Dit bestand is geen geldige back-up (ongeldige JSON).", "warn"); return; }
+      if (!payload || !Array.isArray(payload.tracks) || !Array.isArray(payload.setlists)){
+        showBanner("Dit bestand is geen geldige setlist-studio back-up.", "warn");
+        return;
+      }
+      var msg = "Dit vervangt je huidige bibliotheek (" + tracksMap.size + " " + plural(tracksMap.size,"nummer","nummers") +
+        ") en al je setlists (" + setlistsMap.size + ") door de back-up (" + payload.tracks.length + " " + plural(payload.tracks.length,"nummer","nummers") +
+        ", " + payload.setlists.length + " " + plural(payload.setlists.length,"setlist","setlists") + "). Dit kan niet ongedaan worden gemaakt. Doorgaan?";
+      if (!window.confirm(msg)) return;
+      restoreFromBackup(payload).catch(function(e){
+        showBanner("Herstellen van de back-up is mislukt: " + (e && e.message ? e.message : "onbekende fout") + ".", "warn");
+      });
+    };
+    reader.onerror = function(){ showBanner("Bestand kon niet worden gelezen.", "warn"); };
+    reader.readAsText(file);
+  }
+
+  // Word export: a real, minimal .docx (Open XML) package built by hand
+  // and zipped with JSZip (lazy-loaded from cdnjs, like jsPDF below).
+  // A plain HTML-saved-as-.doc file was considered but the platform's
+  // downloads capability only allow-lists the real "docx" extension.
+  var DOCX_CONTENT_TYPES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+    '</Types>';
+  var DOCX_PACKAGE_RELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+    '</Relationships>';
+  var DOCX_DOCUMENT_RELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '</Relationships>';
+  // Matches the layout of Jeroen & Irene's own Word setlist template: a
+  // centered "JEROEN & IRENE" heading with a rule underneath, the setlist's
+  // own name below it in the same style, then one centered block per track
+  // (title on its own line, "artiest – mm:ss" underneath).
+  var DOCX_STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Aptos" w:hAnsi="Aptos" w:eastAsia="Aptos" w:cs="Aptos"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:rPrDefault>' +
+      '<w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="278" w:lineRule="auto"/></w:pPr></w:pPrDefault>' +
+    '</w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>' +
+    '</w:styles>';
+
+  function buildSetlistDocumentXml(sl){
+    var total = 0;
+    var trackParagraphs = "";
+    sl.trackIds.forEach(function(tid){
+      var t = tracksMap.get(tid);
+      var title = t ? t.title : "(verwijderd nummer)";
+      var artist = t ? (t.artist || "") : "";
+      var dur = t ? t.durationSec : 0;
+      var programma = t ? (t.programma || "") : "";
+      total += dur;
+      var meta = (artist ? escapeHtml(artist) + " – " : "") + escapeHtml(formatDuration(dur)) + (programma ? " · " + escapeHtml(programma) : "");
+      trackParagraphs += '' +
+        '<w:p><w:pPr><w:spacing w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr>' +
+          '<w:r><w:rPr><w:sz w:val="44"/><w:szCs w:val="44"/></w:rPr><w:t xml:space="preserve">' + escapeHtml(title) + '</w:t></w:r>' +
+          '<w:r><w:br/></w:r>' +
+          '<w:r><w:t xml:space="preserve">' + meta + '</w:t></w:r>' +
+          '<w:r><w:br/></w:r>' +
+        '</w:p>';
+    });
+    var body = '' +
+      '<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="auto"/></w:pBdr><w:jc w:val="center"/></w:pPr>' +
+        '<w:r><w:rPr><w:b/><w:bCs/><w:sz w:val="46"/><w:szCs w:val="46"/></w:rPr><w:t xml:space="preserve">JEROEN &amp; IRENE</w:t></w:r>' +
+      '</w:p>' +
+      '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>' +
+        '<w:r><w:rPr><w:b/><w:bCs/><w:sz w:val="46"/><w:szCs w:val="46"/></w:rPr><w:t xml:space="preserve">' + escapeHtml(sl.name) + '</w:t></w:r>' +
+      '</w:p>' +
+      '<w:p><w:pPr><w:spacing w:line="360" w:lineRule="auto"/></w:pPr></w:p>' +
+      trackParagraphs +
+      '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>' +
+        '<w:r><w:rPr><w:color w:val="666666"/><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">Totale duur: ' + escapeHtml(formatDuration(total)) + '</w:t></w:r>' +
+      '</w:p>' +
+      '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/><w:cols w:space="708"/><w:docGrid w:linePitch="360"/></w:sectPr>';
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + body + '</w:body></w:document>';
+  }
+
+  var jsZipLoadPromise = null;
+  function loadJsZip(){
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+    if (jsZipLoadPromise) return jsZipLoadPromise;
+    jsZipLoadPromise = new Promise(function(resolve, reject){
+      var s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+      s.onload = function(){
+        if (window.JSZip) resolve(window.JSZip);
+        else reject(new Error("JSZip kon niet worden geïnitialiseerd."));
+      };
+      s.onerror = function(){ jsZipLoadPromise = null; reject(new Error("JSZip kon niet worden geladen.")); };
+      document.head.appendChild(s);
+    });
+    return jsZipLoadPromise;
+  }
+  function buildSetlistDocxBlob(sl, JSZipCtor){
+    var zip = new JSZipCtor();
+    zip.file("[Content_Types].xml", DOCX_CONTENT_TYPES);
+    zip.folder("_rels").file(".rels", DOCX_PACKAGE_RELS);
+    var wordFolder = zip.folder("word");
+    wordFolder.file("document.xml", buildSetlistDocumentXml(sl));
+    wordFolder.file("styles.xml", DOCX_STYLES);
+    wordFolder.folder("_rels").file("document.xml.rels", DOCX_DOCUMENT_RELS);
+    return zip.generateAsync({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+  }
+
+  // PDF export: lazy-loads jsPDF from cdnjs on first use.
+  var jsPdfLoadPromise = null;
+  function loadJsPdf(){
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    if (jsPdfLoadPromise) return jsPdfLoadPromise;
+    jsPdfLoadPromise = new Promise(function(resolve, reject){
+      var s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js";
+      s.onload = function(){
+        if (window.jspdf && window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
+        else reject(new Error("jsPDF kon niet worden geïnitialiseerd."));
+      };
+      s.onerror = function(){ jsPdfLoadPromise = null; reject(new Error("jsPDF kon niet worden geladen.")); };
+      document.head.appendChild(s);
+    });
+    return jsPdfLoadPromise;
+  }
+  // Matches the layout of Jeroen & Irene's own Word setlist template: a
+  // centered "JEROEN & IRENE" heading with a rule underneath, the setlist's
+  // own name below it in the same style, then one centered block per track
+  // (title on its own line, "artiest – mm:ss" underneath).
+  function buildSetlistPdfBlob(sl, jsPDFCtor){
+    var doc = new jsPDFCtor({unit:"pt", format:"a4"});
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+    var marginX = 71;
+    var centerX = pageWidth / 2;
+    var y = 80;
+
+    doc.setFont("helvetica","bold"); doc.setFontSize(23); doc.setTextColor(20);
+    doc.text("JEROEN & IRENE", centerX, y, {align:"center"});
+    y += 10;
+    doc.setDrawColor(20);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 34;
+    doc.text(sl.name, centerX, y, {align:"center"});
+    y += 46;
+
+    var total = 0;
+    sl.trackIds.forEach(function(tid){
+      var t = tracksMap.get(tid);
+      var title = t ? t.title : "(verwijderd nummer)";
+      var artist = t ? (t.artist || "") : "";
+      var dur = t ? t.durationSec : 0;
+      var programma = t ? (t.programma || "") : "";
+      total += dur;
+      if (y > pageHeight - 100){ doc.addPage(); y = 80; }
+      doc.setFont("helvetica","normal"); doc.setFontSize(22); doc.setTextColor(20);
+      doc.text(title, centerX, y, {align:"center"});
+      y += 24;
+      doc.setFontSize(12);
+      var meta = (artist ? artist + " – " : "") + formatDuration(dur) + (programma ? " · " + programma : "");
+      doc.text(meta, centerX, y, {align:"center"});
+      y += 40;
+    });
+
+    if (y > pageHeight - 60){ doc.addPage(); y = 80; }
+    doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(140);
+    doc.text("Totale duur: " + formatDuration(total), centerX, y, {align:"center"});
+
+    return doc.output("blob");
+  }
+
+  function exportFormatLabel(format){
+    return format === "pdf" ? "PDF" : format === "docx" ? "Word" : "CSV";
+  }
+  function buildExportPayload(sl, format){
+    if (format === "docx"){
+      return loadJsZip().then(function(JSZipCtor){
+        return buildSetlistDocxBlob(sl, JSZipCtor).then(function(blob){
+          return {blob: blob, ext: "docx"};
+        });
+      });
+    }
+    if (format === "pdf"){
+      return loadJsPdf().then(function(jsPDFCtor){
+        return {blob: buildSetlistPdfBlob(sl, jsPDFCtor), ext:"pdf"};
+      });
+    }
+    return Promise.resolve({blob: new Blob([buildSetlistCsv(sl)], {type:"text/csv;charset=utf-8;"}), ext:"csv"});
+  }
+
+  async function exportSetlist(id, format){
+    var sl = setlistsMap.get(id);
+    if (!sl) return;
+    if (songCount(sl) < 3){
+      showBanner("Een setlist moet minstens 3 nummers bevatten voordat je kunt exporteren.", "warn");
+      return;
+    }
+    var baseName = (sl.name || "setlist").replace(/[\\/:*?"<>|]+/g, "").trim() || "setlist";
+    var payload;
+    try{
+      payload = await buildExportPayload(sl, format);
+    } catch(e){
+      showBanner("Exporteren als " + exportFormatLabel(format) + " is niet gelukt: " + (e && e.message ? e.message : "onbekende fout") + ".", "warn");
+      return;
+    }
+    var filename = baseName + "." + payload.ext;
+
+    try{
+      var downloads = (window.claude && window.claude.use) ? await window.claude.use("downloads") : null;
+      if (downloads){
+        await downloads.save({filename: filename, data: payload.blob});
+        showBanner("“" + sl.name + "” is geëxporteerd als " + exportFormatLabel(format) + ".", "success");
+        return;
+      }
+    } catch(e){
+      if (e && e.code === "declined") return;
+      // fall through to the plain-browser download below
+    }
+    if (downloadBlobViaBrowser(payload.blob, filename)){
+      showBanner("“" + sl.name + "” is gedownload als " + exportFormatLabel(format) + ".", "success");
+    } else {
+      showBanner("Exporteren is niet gelukt. Probeer het opnieuw.", "warn");
+    }
+  }
+
+  // ---------- drag & drop ----------
+  function getDropIndex(container, clientY, excludeEl, itemSelector){
+    var items = Array.prototype.slice.call(container.querySelectorAll(itemSelector || ".setlist-track-item")).filter(function(el){ return el !== excludeEl; });
+    for (var i=0;i<items.length;i++){
+      var rect = items[i].getBoundingClientRect();
+      var mid = rect.top + rect.height/2;
+      if (clientY < mid) return i;
+    }
+    return items.length;
+  }
+
+  editorPanelEl.addEventListener("dragstart", function(e){
+    var item = e.target.closest ? e.target.closest(".setlist-track-item") : null;
+    if (!item) return;
+    item.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/x-reorder-index", item.getAttribute("data-index"));
+  });
+  editorPanelEl.addEventListener("dragend", function(e){
+    var item = e.target.closest ? e.target.closest(".setlist-track-item") : null;
+    if (item) item.classList.remove("dragging");
+    if (dropIndicator.parentNode) dropIndicator.parentNode.removeChild(dropIndicator);
+  });
+  editorPanelEl.addEventListener("dragover", function(e){
+    var types = e.dataTransfer.types;
+    var hasTrack = Array.prototype.indexOf.call(types, "application/x-track-id") !== -1;
+    var hasReorder = Array.prototype.indexOf.call(types, "application/x-reorder-index") !== -1;
+    if (!hasTrack && !hasReorder) return;
+
+    if (!activeSetlistId){
+      // No setlist yet: dragging a library track over the empty-state
+      // placeholder is a valid drop that will create one for it. A
+      // reorder drag can't reach here (nothing to reorder without a
+      // setlist), so only library-track drags are accepted.
+      if (!hasTrack) return;
+      var emptyEl = document.getElementById("editor-empty-dropzone");
+      if (!emptyEl || !(emptyEl.contains(e.target) || e.target === emptyEl)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      emptyEl.classList.add("drop-target");
+      return;
+    }
+
+    var listEl = document.getElementById("setlist-track-list");
+    if (!listEl) return;
+    var within = listEl.contains(e.target) || e.target === listEl;
+    if (!within) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = hasReorder ? "move" : "copy";
+    var dragging = listEl.querySelector(".dragging");
+    var idx = getDropIndex(listEl, e.clientY, dragging);
+    var items = Array.prototype.slice.call(listEl.querySelectorAll(".setlist-track-item")).filter(function(el){ return el !== dragging; });
+    var ref = items[idx] || null;
+    listEl.insertBefore(dropIndicator, ref);
+  });
+  editorPanelEl.addEventListener("drop", function(e){
+    if (!activeSetlistId){
+      var emptyEl = document.getElementById("editor-empty-dropzone");
+      if (emptyEl) emptyEl.classList.remove("drop-target");
+      var withinEmpty = emptyEl && (emptyEl.contains(e.target) || e.target === emptyEl);
+      if (!withinEmpty) return;
+      e.preventDefault();
+      var newTrackId = e.dataTransfer.getData("application/x-track-id");
+      if (!newTrackId) return;
+      createSetlistWithTrack("Setlist " + (setlistsMap.size + 1), newTrackId);
+      return;
+    }
+
+    var listEl = document.getElementById("setlist-track-list");
+    if (!listEl) return;
+    var within = listEl.contains(e.target) || e.target === listEl;
+    if (!within) return;
+    e.preventDefault();
+    if (dropIndicator.parentNode) dropIndicator.parentNode.removeChild(dropIndicator);
+    var trackId = e.dataTransfer.getData("application/x-track-id");
+    var reorderIdxStr = e.dataTransfer.getData("application/x-reorder-index");
+    var dragging = listEl.querySelector(".dragging");
+    var idx = getDropIndex(listEl, e.clientY, dragging);
+    if (trackId){
+      mutateSetlist(activeSetlistId, function(ids){ ids.splice(idx, 0, trackId); return ids; });
+    } else if (reorderIdxStr !== ""){
+      var fromIdx = parseInt(reorderIdxStr, 10);
+      mutateSetlist(activeSetlistId, function(ids){
+        var copy = ids.slice();
+        var moved = copy.splice(fromIdx, 1)[0];
+        // idx already comes from getDropIndex(), which excludes the
+        // dragged item from its own indexing — so it's already an index
+        // into `copy` (post-removal) and needs no further adjustment.
+        copy.splice(idx, 0, moved);
+        return copy;
+      });
+    }
+  });
+  editorPanelEl.addEventListener("dragleave", function(e){
+    if (activeSetlistId) return;
+    var emptyEl = document.getElementById("editor-empty-dropzone");
+    if (!emptyEl) return;
+    // Only clear the highlight once the pointer has actually left the
+    // dropzone (not just moved to a child element inside it).
+    if (e.relatedTarget && emptyEl.contains(e.relatedTarget)) return;
+    emptyEl.classList.remove("drop-target");
+  });
+
+  // library drag source
+  document.getElementById("panel-library").addEventListener("dragstart", function(e){
+    var item = e.target.closest ? e.target.closest(".track-item") : null;
+    if (!item) return;
+    item.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("application/x-track-id", item.getAttribute("data-track-id"));
+  });
+  document.getElementById("panel-library").addEventListener("dragend", function(e){
+    var item = e.target.closest ? e.target.closest(".track-item") : null;
+    if (item) item.classList.remove("dragging");
+    var emptyEl = document.getElementById("editor-empty-dropzone");
+    if (emptyEl) emptyEl.classList.remove("drop-target");
+  });
+
+  // ---------- event delegation: library panel ----------
+  var libraryPanel = document.getElementById("panel-library");
+  libraryPanel.addEventListener("click", function(e){
+    var addBtn = e.target.closest && e.target.closest('[data-action="quick-add"]');
+    if (addBtn){
+      var id = addBtn.getAttribute("data-id");
+      if (!activeSetlistId){
+        createSetlistWithTrack("Setlist " + (setlistsMap.size + 1), id);
+        mobileSetlistSelected();
+        return;
+      }
+      mutateSetlist(activeSetlistId, function(ids){
+        if (ids.indexOf(id) === -1) ids.push(id);
+        return ids;
+      });
+      return;
+    }
+    var editBtn = e.target.closest && e.target.closest('[data-action="edit-track"]');
+    if (editBtn){
+      editingTrackId = editBtn.getAttribute("data-id");
+      renderLibrary();
+      return;
+    }
+    var cancelEditBtn = e.target.closest && e.target.closest('[data-action="cancel-track-edit"]');
+    if (cancelEditBtn){
+      editingTrackId = null;
+      renderLibrary();
+      return;
+    }
+    var saveEditBtn = e.target.closest && e.target.closest('[data-action="save-track-edit"]');
+    if (saveEditBtn){
+      var editId = saveEditBtn.getAttribute("data-id");
+      commitTrackEdit(editId);
+      return;
+    }
+    var delBtn = e.target.closest && e.target.closest('[data-action="delete-track"]');
+    if (delBtn){
+      var id = delBtn.getAttribute("data-id");
+      var key = "track:" + id;
+      if (requestConfirm(key, renderLibrary)) deleteTrackById(id);
+      return;
+    }
+    if (e.target.id === "open-add-track-btn" || (e.target.closest && e.target.closest("#open-add-track-btn"))){
+      openAddTrackModal();
+      return;
+    }
+    if (e.target.id === "genre-filter-btn" || (e.target.closest && e.target.closest("#genre-filter-btn"))){
+      if (isGenreFilterOpen()) closeGenreFilter(); else openGenreFilter();
+      return;
+    }
+    if (e.target.id === "genre-filter-clear"){
+      libraryGenreFilters.clear();
+      renderLibrary();
+      return;
+    }
+  });
+  function isGenreFilterOpen(){
+    var popoverEl = document.getElementById("genre-filter-popover");
+    return !!(popoverEl && !popoverEl.hidden);
+  }
+  function openGenreFilter(){
+    var popoverEl = document.getElementById("genre-filter-popover");
+    var wrapEl = document.getElementById("genre-filter");
+    var btnEl = document.getElementById("genre-filter-btn");
+    if (!popoverEl) return;
+    popoverEl.hidden = false;
+    if (wrapEl) wrapEl.classList.add("open");
+    if (btnEl) btnEl.setAttribute("aria-expanded", "true");
+  }
+  function closeGenreFilter(){
+    var popoverEl = document.getElementById("genre-filter-popover");
+    var wrapEl = document.getElementById("genre-filter");
+    var btnEl = document.getElementById("genre-filter-btn");
+    if (!popoverEl) return;
+    popoverEl.hidden = true;
+    if (wrapEl) wrapEl.classList.remove("open");
+    if (btnEl) btnEl.setAttribute("aria-expanded", "false");
+  }
+  document.addEventListener("click", function(e){
+    var wrapEl = document.getElementById("genre-filter");
+    if (!wrapEl || wrapEl.contains(e.target)) return;
+    closeGenreFilter();
+  });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && isGenreFilterOpen()) closeGenreFilter();
+  });
+  function commitTrackEdit(id){
+    var titleInput = document.getElementById("edit-title-" + id);
+    var artistInput = document.getElementById("edit-artist-" + id);
+    var genreInput = document.getElementById("edit-genre-" + id);
+    var programmaInput = document.getElementById("edit-programma-" + id);
+    var durInput = document.getElementById("edit-duration-" + id);
+    if (!titleInput || !durInput) return;
+    var title = titleInput.value.trim();
+    var artist = artistInput ? artistInput.value.trim() : "";
+    var genre = genreInput ? genreInput.value.trim() : "";
+    var programma = programmaInput ? programmaInput.value.trim() : "";
+    var dur = parseDuration(durInput.value);
+    if (!title){ showBanner("Vul een titel in.", "warn"); titleInput.focus(); return; }
+    if (dur == null){ showBanner("Gebruik het formaat mm:ss, bijvoorbeeld 3:45.", "warn"); durInput.focus(); return; }
+    editingTrackId = null;
+    updateTrack(id, title, artist, dur, genre, programma);
+    renderLibrary();
+  }
+  libraryPanel.addEventListener("keydown", function(e){
+    var isEditField = e.target.classList && (e.target.classList.contains("track-edit-title") || e.target.classList.contains("track-edit-artist") || e.target.classList.contains("track-edit-genre") || e.target.classList.contains("track-edit-programma") || e.target.classList.contains("track-edit-duration"));
+    if (!isEditField) return;
+    if (e.key === "Enter"){
+      e.preventDefault();
+      var id = e.target.id.replace(/^edit-(title|artist|genre|programma|duration)-/, "");
+      commitTrackEdit(id);
+    } else if (e.key === "Escape"){
+      editingTrackId = null;
+      renderLibrary();
+    }
+  });
+  libraryPanel.addEventListener("input", function(e){
+    if (e.target.id === "library-search"){
+      librarySearchTerm = e.target.value;
+      renderLibrary();
+    }
+  });
+  libraryPanel.addEventListener("change", function(e){
+    if (e.target.type === "checkbox" && e.target.closest && e.target.closest("#genre-filter-popover")){
+      if (e.target.checked) libraryGenreFilters.add(e.target.value);
+      else libraryGenreFilters.delete(e.target.value);
+      renderLibrary();
+    }
+  });
+  // ---------- add-track popup ----------
+  var addTrackModalEl = document.getElementById("add-track-modal");
+  function openAddTrackModal(){
+    if (!addTrackModalEl) return;
+    var errorEl = document.getElementById("add-track-error");
+    if (errorEl) errorEl.hidden = true;
+    addTrackModalEl.hidden = false;
+    var ti = document.getElementById("new-track-title");
+    if (ti) ti.focus();
+  }
+  function closeAddTrackModal(){
+    if (!addTrackModalEl) return;
+    addTrackModalEl.hidden = true;
+    var form = document.getElementById("add-track-form");
+    if (form) form.reset();
+    var errorEl = document.getElementById("add-track-error");
+    if (errorEl) errorEl.hidden = true;
+  }
+  if (addTrackModalEl){
+    addTrackModalEl.addEventListener("click", function(e){
+      if (e.target === addTrackModalEl) closeAddTrackModal();
+    });
+    addTrackModalEl.addEventListener("keydown", function(e){
+      if (e.key === "Escape") closeAddTrackModal();
+    });
+    addTrackModalEl.addEventListener("click", function(e){
+      if (e.target.id === "add-track-cancel-btn") closeAddTrackModal();
+    });
+    addTrackModalEl.addEventListener("submit", function(e){
+      if (e.target.id === "add-track-form"){
+        e.preventDefault();
+        var titleInput = document.getElementById("new-track-title");
+        var artistInput = document.getElementById("new-track-artist");
+        var genreInput = document.getElementById("new-track-genre");
+        var programmaInput = document.getElementById("new-track-programma");
+        var durInput = document.getElementById("new-track-duration");
+        var errorEl = document.getElementById("add-track-error");
+        var title = titleInput.value.trim();
+        var artist = artistInput.value.trim();
+        var genre = genreInput.value.trim();
+        var programma = programmaInput ? programmaInput.value.trim() : "";
+        var dur = parseDuration(durInput.value);
+        if (!title){ errorEl.textContent = "Vul een titel in."; errorEl.hidden = false; titleInput.focus(); return; }
+        if (dur == null){ errorEl.textContent = "Gebruik het formaat mm:ss, bijvoorbeeld 3:45."; errorEl.hidden = false; durInput.focus(); return; }
+        errorEl.hidden = true;
+        addTrack(title, artist, dur, genre, programma);
+        closeAddTrackModal();
+      }
+    });
+  }
+  // ---------- add-existing-track-to-setlist popup ----------
+  // Replaces the old inline dropdown: the + button in the active setlist's
+  // action row opens this list instead, so tapping a track adds it right
+  // away (works on mobile too, same reasoning as the old dropdown) while
+  // staying open so several tracks can be added in one go.
+  var addExistingTrackModalEl = document.getElementById("add-existing-track-modal");
+  var addExistingTrackSearchTerm = "";
+  function renderAddExistingTrackList(){
+    var listEl = document.getElementById("add-existing-track-list");
+    if (!listEl) return;
+    var term = addExistingTrackSearchTerm.trim().toLowerCase();
+    var existingIds = new Set();
+    if (activeSetlistId){
+      var activeSl = setlistsMap.get(activeSetlistId);
+      if (activeSl && Array.isArray(activeSl.trackIds)) activeSl.trackIds.forEach(function(id){ existingIds.add(id); });
+    }
+    var items = sortedTracks().filter(function(t){
+      if (existingIds.has(t.id)) return false;
+      if (!term) return true;
+      return (t.title + " " + (t.artist||"") + " " + (t.genre||"")).toLowerCase().indexOf(term) !== -1;
+    });
+    if (items.length === 0){
+      listEl.innerHTML = '<p class="picker-empty">Geen nummers gevonden.</p>';
+      return;
+    }
+    listEl.innerHTML = items.map(function(t){
+      return '' +
+        '<button type="button" class="picker-item" data-id="' + t.id + '">' +
+          '<span class="track-info">' +
+            '<span class="track-title">' + escapeHtml(t.title) + '</span>' +
+            (t.artist ? '<span class="track-artist">' + escapeHtml(t.artist) + '</span>' : '') +
+          '</span>' +
+          '<span class="track-duration mono">' + formatDuration(t.durationSec) + '</span>' +
+          '<span class="icon-btn" aria-hidden="true">' + ICON_PLUS + '</span>' +
+        '</button>';
+    }).join("");
+  }
+  function openAddExistingTrackModal(){
+    if (!addExistingTrackModalEl || !activeSetlistId) return;
+    addExistingTrackSearchTerm = "";
+    var searchInput = document.getElementById("add-existing-track-search");
+    if (searchInput) searchInput.value = "";
+    renderAddExistingTrackList();
+    addExistingTrackModalEl.hidden = false;
+    if (searchInput) searchInput.focus();
+  }
+  function closeAddExistingTrackModal(){
+    if (!addExistingTrackModalEl) return;
+    addExistingTrackModalEl.hidden = true;
+  }
+  if (addExistingTrackModalEl){
+    addExistingTrackModalEl.addEventListener("click", function(e){
+      if (e.target === addExistingTrackModalEl){ closeAddExistingTrackModal(); return; }
+      if (e.target.id === "add-existing-track-done-btn"){ closeAddExistingTrackModal(); return; }
+      var item = e.target.closest && e.target.closest(".picker-item");
+      if (item && activeSetlistId){
+        var trackId = item.getAttribute("data-id");
+        mutateSetlist(activeSetlistId, function(ids){
+          if (ids.indexOf(trackId) === -1) ids.push(trackId);
+          return ids;
+        });
+      }
+    });
+    addExistingTrackModalEl.addEventListener("keydown", function(e){
+      if (e.key === "Escape") closeAddExistingTrackModal();
+    });
+    addExistingTrackModalEl.addEventListener("input", function(e){
+      if (e.target.id === "add-existing-track-search"){
+        addExistingTrackSearchTerm = e.target.value;
+        renderAddExistingTrackList();
+      }
+    });
+  }
+  // ---------- event delegation: setlists panel ----------
+  var setlistsPanel = document.getElementById("panel-setlists");
+  setlistsPanel.addEventListener("dragstart", function(e){
+    var item = e.target.closest ? e.target.closest(".setlist-row") : null;
+    if (!item) return;
+    item.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("application/x-setlist-reorder", item.getAttribute("data-id"));
+  });
+  setlistsPanel.addEventListener("dragend", function(e){
+    var item = e.target.closest ? e.target.closest(".setlist-row") : null;
+    if (item) item.classList.remove("dragging");
+    if (dropIndicator.parentNode) dropIndicator.parentNode.removeChild(dropIndicator);
+  });
+  setlistsPanel.addEventListener("dragover", function(e){
+    var listEl = setlistsListEl;
+    var types = e.dataTransfer.types;
+    var hasReorder = Array.prototype.indexOf.call(types, "application/x-setlist-reorder") !== -1;
+    if (!hasReorder || !listEl) return;
+    var within = listEl.contains(e.target) || e.target === listEl;
+    if (!within) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    var dragging = listEl.querySelector(".dragging");
+    var idx = getDropIndex(listEl, e.clientY, dragging, ".setlist-row");
+    var items = Array.prototype.slice.call(listEl.querySelectorAll(".setlist-row")).filter(function(el){ return el !== dragging; });
+    var ref = items[idx] || null;
+    listEl.insertBefore(dropIndicator, ref);
+  });
+  setlistsPanel.addEventListener("drop", function(e){
+    var listEl = setlistsListEl;
+    if (!listEl) return;
+    var within = listEl.contains(e.target) || e.target === listEl;
+    if (!within) return;
+    e.preventDefault();
+    if (dropIndicator.parentNode) dropIndicator.parentNode.removeChild(dropIndicator);
+    var draggedId = e.dataTransfer.getData("application/x-setlist-reorder");
+    if (!draggedId) return;
+    var dragging = listEl.querySelector(".dragging");
+    var idx = getDropIndex(listEl, e.clientY, dragging, ".setlist-row");
+    var currentOrder = sortSetlists(Array.from(setlistsMap.values())).map(function(sl){ return sl.id; });
+    var fromIdx = currentOrder.indexOf(draggedId);
+    if (fromIdx === -1) return;
+    var copy = currentOrder.slice();
+    var moved = copy.splice(fromIdx, 1)[0];
+    // idx already comes from getDropIndex(), which excludes the dragged
+    // row from its own indexing — so it's already an index into `copy`
+    // (post-removal) and needs no further adjustment.
+    copy.splice(idx, 0, moved);
+    reorderSetlistsManual(copy);
+  });
+  setlistsPanel.addEventListener("change", function(e){
+    if (e.target.id === "show-future-setlists-only"){
+      showFutureSetlistsOnly = !!e.target.checked;
+      saveShowFutureSetlistsSetting(showFutureSetlistsOnly);
+      renderSetlistsList();
+    }
+  });
+  setlistsPanel.addEventListener("click", function(e){
+    if (e.target.id === "new-setlist-btn" || (e.target.closest && e.target.closest("#new-setlist-btn"))){
+      creatingSetlist = true;
+      renderNewSetlistForm();
+      return;
+    }
+    if (e.target.id === "cancel-new-setlist"){
+      creatingSetlist = false;
+      renderNewSetlistForm();
+      return;
+    }
+    var renameBtn = e.target.closest && e.target.closest('[data-action="rename-setlist"]');
+    if (renameBtn){
+      renamingSetlistId = renameBtn.getAttribute("data-id");
+      renderSetlistsList();
+      return;
+    }
+    var cancelRenameBtn = e.target.closest && e.target.closest('[data-action="cancel-setlist-rename"]');
+    if (cancelRenameBtn){
+      renamingSetlistId = null;
+      renderSetlistsList();
+      return;
+    }
+    var saveRenameBtn = e.target.closest && e.target.closest('[data-action="save-setlist-rename"]');
+    if (saveRenameBtn){
+      commitSetlistRename(saveRenameBtn.getAttribute("data-id"));
+      return;
+    }
+    var delBtn = e.target.closest && e.target.closest('[data-action="delete-setlist"]');
+    if (delBtn){
+      var id = delBtn.getAttribute("data-id");
+      var key = "setlist:" + id;
+      if (requestConfirm(key, renderSetlistsList)) deleteSetlist(id);
+      return;
+    }
+    var row = e.target.closest && e.target.closest('[data-action="select-setlist"]');
+    if (row){
+      activeSetlistId = row.getAttribute("data-id");
+      renderSetlistsList(); renderActiveSetlist(); renderLibrary();
+      mobileSetlistSelected();
+    }
+  });
+  function commitSetlistRename(id){
+    var input = document.getElementById("rename-setlist-" + id);
+    if (!input) return;
+    var name = input.value.trim();
+    if (!name){ showBanner("Vul een naam in.", "warn"); input.focus(); return; }
+    renamingSetlistId = null;
+    renameSetlist(id, name);
+    renderSetlistsList();
+  }
+  setlistsPanel.addEventListener("keydown", function(e){
+    if (e.target.classList && e.target.classList.contains("setlist-rename-input")){
+      if (e.key === "Enter"){
+        e.preventDefault();
+        commitSetlistRename(e.target.id.replace(/^rename-setlist-/, ""));
+      } else if (e.key === "Escape"){
+        renamingSetlistId = null;
+        renderSetlistsList();
+      }
+      return;
+    }
+    var row = e.target.closest && e.target.closest('[data-action="select-setlist"]');
+    if (row && (e.key === "Enter" || e.key === " ")){
+      e.preventDefault();
+      activeSetlistId = row.getAttribute("data-id");
+      renderSetlistsList(); renderActiveSetlist(); renderLibrary();
+      mobileSetlistSelected();
+    }
+  });
+  setlistsPanel.addEventListener("submit", function(e){
+    if (e.target.id === "create-setlist-form"){
+      e.preventDefault();
+      var input = document.getElementById("new-setlist-name");
+      var name = input.value.trim() || ("Setlist " + (setlistsMap.size + 1));
+      creatingSetlist = false;
+      createSetlist(name);
+      renderNewSetlistForm();
+    }
+  });
+
+  var exportFormatModalEl = document.getElementById("export-format-modal");
+  if (exportFormatModalEl){
+    exportFormatModalEl.addEventListener("click", function(e){
+      if (e.target === exportFormatModalEl){ exportFormatModalEl.hidden = true; return; }
+      var btn = e.target.closest && e.target.closest("[data-export-format]");
+      if (!btn || !activeSetlistId) return;
+      exportFormatModalEl.hidden = true;
+      exportSetlist(activeSetlistId, btn.getAttribute("data-export-format"));
+    });
+    exportFormatModalEl.addEventListener("keydown", function(e){ if (e.key === "Escape") exportFormatModalEl.hidden = true; });
+  }
+
+  // ---------- event delegation: editor panel ----------
+  editorPanelEl.addEventListener("click", function(e){
+    var rmBtn = e.target.closest && e.target.closest('[data-action="remove-track"]');
+    if (rmBtn){
+      var idxRm = parseInt(rmBtn.getAttribute("data-index"), 10);
+      mutateSetlist(activeSetlistId, function(ids){ var copy = ids.slice(); copy.splice(idxRm,1); return copy; });
+      return;
+    }
+    var exportBtn = e.target.closest && e.target.closest('[data-action="export-setlist"]');
+    if (exportBtn && !exportBtn.disabled){
+      var formatModal = document.getElementById("export-format-modal");
+      if (formatModal) formatModal.hidden = false;
+      return;
+    }
+    if (e.target.id === "open-add-existing-track-btn" || (e.target.closest && e.target.closest("#open-add-existing-track-btn"))){
+      openAddExistingTrackModal();
+      return;
+    }
+  });
+  editorPanelEl.addEventListener("focusout", function(e){
+    if (e.target.id === "setlist-name-input" && activeSetlistId){
+      var val = e.target.value.trim();
+      var sl = setlistsMap.get(activeSetlistId);
+      if (sl && val && val !== sl.name) renameSetlist(activeSetlistId, val);
+      else if (sl) e.target.value = sl.name;
+    }
+  });
+  editorPanelEl.addEventListener("change", function(e){
+    if (e.target.id === "setlist-date-input" && activeSetlistId){
+      var sl = setlistsMap.get(activeSetlistId);
+      if (sl && e.target.value !== (sl.date || "")) updateSetlistDate(activeSetlistId, e.target.value);
+    }
+  });
+  editorPanelEl.addEventListener("keydown", function(e){
+    if (e.target.id === "setlist-name-input" && e.key === "Enter"){
+      e.preventDefault();
+      e.target.blur();
+    }
+  });
+
+  // ---------- resizable & reorderable panels ----------
+  // Columns are sized in `fr` units (proportional shares of the available
+  // width), so they automatically rescale together whenever the window is
+  // resized — no resize listener needed, the grid does it natively.
+  // While actively dragging a handle we track the mouse 1:1 in pixels for a
+  // direct feel, then convert the result back to a ratio when the drag
+  // ends, so the next window resize keeps that same proportion.
+  //
+  // Which panel's content lands in which grid slot is independent of
+  // width: `panelOrder` holds the current left-to-right arrangement of the
+  // three panel ids, applied via the CSS `order` property, so any panel
+  // can be moved into any of the three positions (e.g. the active setlist
+  // entirely on the left, or in the middle). Each panel remembers its own
+  // width preference; only the first two slots are directly resizable via
+  // a drag handle — the third/rightmost slot always takes the remaining
+  // space, whichever panel currently occupies it.
+  var PANEL_WIDTHS_KEY = "setlist-studio:panel-widths";
+  var PANEL_WIDTHS_PX_KEY = "setlist-studio:panel-widths-px";
+  var PANEL_ORDER_KEY = "setlist-studio:panel-order";
+  var DEFAULT_PANEL_ORDER = ["library", "setlists", "editor"];
+  var DEFAULT_PANEL_FR = {library: 1.75, setlists: 1.55, editor: 1.75};
+  var PANEL_LABELS = {library: "Bibliotheek", setlists: "Setlists", editor: "Actieve setlist"};
+  var PANEL_SECTION_IDS = {library: "panel-library", setlists: "panel-setlists", editor: "panel-editor"};
+  var RESIZE_MIN_PX = 240;
+  var RESIZE_MAX_PX = 1400;
+  var STACK_BREAKPOINT = 980;
+
+  var panelOrder = DEFAULT_PANEL_ORDER.slice();
+  var panelWidths = Object.assign({}, DEFAULT_PANEL_FR);
+  var panelWidthsPx = {};
+
+  function clampPx(v){ return Math.max(RESIZE_MIN_PX, Math.min(RESIZE_MAX_PX, v)); }
+  function panelPx(el){ return el ? el.getBoundingClientRect().width : 0; }
+  function panelSectionEl(id){ return document.getElementById(PANEL_SECTION_IDS[id]); }
+
+  function savePanelWidths(){
+    try{ window.localStorage.setItem(PANEL_WIDTHS_KEY, JSON.stringify(panelWidths)); } catch(e){ /* ignore */ }
+    try{ window.localStorage.setItem(PANEL_WIDTHS_PX_KEY, JSON.stringify(panelWidthsPx)); } catch(e){ /* ignore */ }
+  }
+  function loadPanelWidths(){
+    try{
+      var rawPx = window.localStorage.getItem(PANEL_WIDTHS_PX_KEY);
+      if (rawPx){
+        var pxObj = JSON.parse(rawPx);
+        if (pxObj) DEFAULT_PANEL_ORDER.forEach(function(id){
+          if (typeof pxObj[id] === "number") panelWidthsPx[id] = clampPx(pxObj[id]);
+        });
+      }
+      var raw = window.localStorage.getItem(PANEL_WIDTHS_KEY);
+      if (raw){
+        var obj = JSON.parse(raw);
+        if (obj) DEFAULT_PANEL_ORDER.forEach(function(id){
+          if (typeof obj[id] === "number") panelWidths[id] = obj[id];
+        });
+      }
+    } catch(e){ /* ignore */ }
+  }
+  function savePanelOrder(){
+    try{ window.localStorage.setItem(PANEL_ORDER_KEY, JSON.stringify(panelOrder)); } catch(e){ /* ignore */ }
+  }
+  function loadPanelOrder(){
+    try{
+      var raw = window.localStorage.getItem(PANEL_ORDER_KEY);
+      if (!raw) return;
+      var obj = JSON.parse(raw);
+      if (Array.isArray(obj) && obj.length === 3 &&
+          DEFAULT_PANEL_ORDER.slice().sort().join(",") === obj.slice().sort().join(",")) panelOrder = obj;
+    } catch(e){ /* ignore */ }
+  }
+
+  function panelDragHandleHtml(panelId){
+    return '<span class="panel-drag-handle" draggable="true" data-panel="' + panelId + '" aria-label="' +
+      PANEL_LABELS[panelId] + '-blok verslepen om te verplaatsen" title="Sleep om te verplaatsen">' + ICON_HANDLE + '</span>';
+  }
+
+  function applyPanelLayout(){
+    var layoutEl = document.querySelector(".layout");
+    panelOrder.forEach(function(id, i){
+      var section = panelSectionEl(id);
+      if (section) section.style.order = i * 2;
+    });
+    var handle1 = document.getElementById("resize-handle-1");
+    var handle2 = document.getElementById("resize-handle-2");
+    if (handle1) handle1.style.order = 1;
+    if (handle2) handle2.style.order = 3;
+    var id1 = panelOrder[0], id2 = panelOrder[1];
+    if (typeof panelWidthsPx[id1] === "number") layoutEl.style.setProperty("--w-col1", clampPx(panelWidthsPx[id1]) + "px");
+    else layoutEl.style.setProperty("--w-col1", panelWidths[id1] + "fr");
+    if (typeof panelWidthsPx[id2] === "number") layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx[id2]) + "px");
+    else layoutEl.style.setProperty("--w-col2", panelWidths[id2] + "fr");
+  }
+
+  var panelDragId = null;
+  var panelDragSection = null;
+  function panelIdForSection(section){
+    var found = null;
+    DEFAULT_PANEL_ORDER.forEach(function(id){ if (panelSectionEl(id) === section) found = id; });
+    return found;
+  }
+  function clearPanelDropTargets(){
+    DEFAULT_PANEL_ORDER.forEach(function(id){ var section = panelSectionEl(id); if (section) section.classList.remove("panel-drop-target"); });
+  }
+  function initPanelReorder(){
+    DEFAULT_PANEL_ORDER.forEach(function(id){
+      var section = panelSectionEl(id), header = section ? section.querySelector(".panel-header") : null;
+      if (!header || header.querySelector(".panel-drag-handle")) return;
+      var actions = header.querySelector(".panel-header-actions");
+      if (actions) actions.insertAdjacentHTML("beforeend", panelDragHandleHtml(id));
+      else header.insertAdjacentHTML("beforeend", '<span class="panel-header-actions">' + panelDragHandleHtml(id) + '</span>');
+    });
+    var layoutEl = document.querySelector(".layout");
+    layoutEl.addEventListener("dragstart", function(e){
+      var handle = e.target.closest && e.target.closest(".panel-drag-handle");
+      if (!handle) return;
+      panelDragId = handle.getAttribute("data-panel"); panelDragSection = panelSectionEl(panelDragId);
+      if (panelDragSection) panelDragSection.classList.add("panel-dragging");
+      e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("application/x-panel-reorder", panelDragId);
+    });
+    layoutEl.addEventListener("dragend", function(){
+      if (panelDragSection) panelDragSection.classList.remove("panel-dragging");
+      clearPanelDropTargets(); panelDragId = null; panelDragSection = null;
+    });
+    layoutEl.addEventListener("dragover", function(e){
+      if (!panelDragId) return;
+      if (Array.prototype.indexOf.call(e.dataTransfer.types, "application/x-panel-reorder") === -1) return;
+      var targetSection = e.target.closest && e.target.closest(".panel"); if (!targetSection) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "move"; clearPanelDropTargets();
+      var targetId = panelIdForSection(targetSection); if (targetId && targetId !== panelDragId) targetSection.classList.add("panel-drop-target");
+    });
+    layoutEl.addEventListener("drop", function(e){
+      if (!panelDragId) return;
+      if (Array.prototype.indexOf.call(e.dataTransfer.types, "application/x-panel-reorder") === -1) return;
+      var targetSection = e.target.closest && e.target.closest(".panel"); clearPanelDropTargets(); if (!targetSection){ panelDragId=null; return; }
+      e.preventDefault(); var targetId=panelIdForSection(targetSection), draggedId=panelDragId; panelDragId=null;
+      if (!targetId || targetId===draggedId) return;
+      var rect=targetSection.getBoundingClientRect(), before=e.clientX < rect.left+rect.width/2, copy=panelOrder.slice(), fromIdx=copy.indexOf(draggedId);
+      if (fromIdx===-1) return; copy.splice(fromIdx,1); var insertAt=copy.indexOf(targetId); if (insertAt===-1) return;
+      if (!before) insertAt+=1; copy.splice(insertAt,0,draggedId); panelOrder=copy; savePanelOrder(); applyPanelLayout();
+    });
+  }
+
+  function initResizers(){
+    var layoutEl = document.querySelector(".layout");
+    function slotEl(slotIndex){ return panelSectionEl(panelOrder[slotIndex]); }
+    function lockCurrentWidths(){
+      [0,1].forEach(function(i){
+        var id=panelOrder[i], px=panelPx(slotEl(i));
+        if (px>0) panelWidthsPx[id]=clampPx(px);
+      });
+      if (typeof panelWidthsPx[panelOrder[0]] === "number") layoutEl.style.setProperty("--w-col1", panelWidthsPx[panelOrder[0]]+"px");
+      if (typeof panelWidthsPx[panelOrder[1]] === "number") layoutEl.style.setProperty("--w-col2", panelWidthsPx[panelOrder[1]]+"px");
+      savePanelWidths();
+    }
+    function dynamicMaxPx(slotIndex){
+      var other = slotIndex === 0 ? panelPx(slotEl(1)) : panelPx(slotEl(0));
+      var reserve = other + 14 + 14 + 320 + 32;
+      return Math.max(RESIZE_MIN_PX, Math.min(RESIZE_MAX_PX, window.innerWidth-reserve));
+    }
+    function setupResizeHandle(handle, slotIndex, colVar){
+      if (!handle) return;
+      var dragging=false,startX=0,startWidth=0;
+      handle.addEventListener("pointerdown",function(e){
+        if(window.innerWidth<STACK_BREAKPOINT)return;
+        lockCurrentWidths(); dragging=true; startX=e.clientX; startWidth=panelPx(slotEl(slotIndex));
+        try{handle.setPointerCapture(e.pointerId);}catch(err){} document.body.style.userSelect="none";
+      });
+      handle.addEventListener("pointermove",function(e){
+        if(!dragging)return;
+        var next=Math.max(RESIZE_MIN_PX,Math.min(dynamicMaxPx(slotIndex),startWidth+(e.clientX-startX)));
+        layoutEl.style.setProperty(colVar,next+"px");
+      });
+      function endDrag(){
+        if(!dragging)return; dragging=false; document.body.style.userSelect="";
+        var id=panelOrder[slotIndex], px=panelPx(slotEl(slotIndex)); panelWidthsPx[id]=clampPx(px); savePanelWidths();
+      }
+      handle.addEventListener("pointerup",endDrag); handle.addEventListener("pointercancel",endDrag);
+      handle.addEventListener("keydown",function(e){
+        if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return; e.preventDefault(); lockCurrentWidths();
+        var next=Math.max(RESIZE_MIN_PX,Math.min(dynamicMaxPx(slotIndex),panelPx(slotEl(slotIndex))+(e.key==="ArrowRight"?24:-24)));
+        layoutEl.style.setProperty(colVar,next+"px"); panelWidthsPx[panelOrder[slotIndex]]=clampPx(next); savePanelWidths();
+      });
+    }
+    lockCurrentWidths();
+    setupResizeHandle(document.getElementById("resize-handle-1"),0,"--w-col1");
+    setupResizeHandle(document.getElementById("resize-handle-2"),1,"--w-col2");
+  }
+
+  function initPanelLayout(){
+    loadPanelOrder();
+    loadPanelWidths();
+    initPanelReorder();
+    applyPanelLayout();
+    initResizers();
+  }
+
+  // ---------- settings panel (cloud sync) ----------
+  var settingsBtn = document.getElementById("settings-btn");
+  var settingsPanelEl = document.getElementById("settings-panel");
+  var settingsOverlayEl = document.getElementById("settings-overlay");
+  function openSettingsPanel(){
+    if (!settingsOverlayEl) return;
+    settingsOverlayEl.hidden = false;
+    renderSettingsPanel();
+  }
+  function closeSettingsPanel(){
+    if (!settingsOverlayEl) return;
+    settingsOverlayEl.hidden = true;
+  }
+  if (settingsBtn && settingsPanelEl && settingsOverlayEl){
+    settingsBtn.addEventListener("click", function(){
+      if (settingsOverlayEl.hidden) openSettingsPanel(); else closeSettingsPanel();
+    });
+    settingsOverlayEl.addEventListener("click", function(e){
+      if (e.target === settingsOverlayEl) closeSettingsPanel();
+    });
+    settingsOverlayEl.addEventListener("keydown", function(e){
+      if (e.key === "Escape") closeSettingsPanel();
+    });
+    var settingsCloseBtn = document.getElementById("settings-close-btn");
+    if (settingsCloseBtn){
+      settingsCloseBtn.addEventListener("click", closeSettingsPanel);
+    }
+    settingsPanelEl.addEventListener("click", function(e){
+      if (e.target.id === "connect-cloud-btn"){ handleConnectFirebase(); return; }
+      if (e.target.id === "disconnect-cloud-btn"){ handleDisconnectFirebase(); return; }
+      if (e.target.id === "reenable-cloud-btn"){ handleReenableFirebase(); return; }
+      if (e.target.id === "auth-logout-btn"){ handleAuthLogout(); return; }
+      if (e.target.id === "upload-btn" || (e.target.closest && e.target.closest("#upload-btn"))){
+        var fileInput = document.getElementById("file-input");
+        if (fileInput) fileInput.click();
+        return;
+      }
+      if (e.target.id === "upload-setlists-btn" || (e.target.closest && e.target.closest("#upload-setlists-btn"))){
+        var setlistFileInput = document.getElementById("setlist-docx-input");
+        if (setlistFileInput) setlistFileInput.click();
+        return;
+      }
+      if (e.target.id === "theme-reset-btn"){
+        clearThemeOverride();
+        applyTheme(DEFAULT_THEME);
+        renderSettingsPanel();
+        return;
+      }
+      if (e.target.id === "backup-export-btn" || (e.target.closest && e.target.closest("#backup-export-btn"))){
+        handleBackupExport();
+        return;
+      }
+      if (e.target.id === "backup-import-btn" || (e.target.closest && e.target.closest("#backup-import-btn"))){
+        var backupInput = document.getElementById("backup-import-input");
+        if (backupInput) backupInput.click();
+        return;
+      }
+    });
+    settingsPanelEl.addEventListener("input", function(e){
+      if (!e.target.id || e.target.id.indexOf("theme-") !== 0) return;
+      var themeInputMap = {
+        "theme-bg": "bg", "theme-surface": "surface", "theme-surface2": "surface2",
+        "theme-accent": "accent", "theme-text": "text", "theme-textmuted": "textMuted"
+      };
+      var themeKey = themeInputMap[e.target.id];
+      if (!themeKey) return;
+      var theme = currentTheme();
+      theme[themeKey] = e.target.value;
+      applyTheme(theme);
+      saveThemeOverride(theme);
+    });
+    settingsPanelEl.addEventListener("submit", function(e){
+      if (e.target.id === "settings-login-form"){
+        e.preventDefault();
+        var u = document.getElementById("settings-login-username");
+        var p = document.getElementById("settings-login-password");
+        var errorEl = document.getElementById("settings-login-error");
+        handleAuthLogin(u ? u.value.trim() : "", p ? p.value : "", errorEl);
+      }
+    });
+    settingsPanelEl.addEventListener("change", function(e){
+      if (e.target.id === "require-login-toggle"){
+        handleToggleRequireLogin(e.target.checked);
+        return;
+      }
+      if (e.target.id === "show-programma-toggle"){
+        showProgrammaInLibrary = e.target.checked;
+        saveShowProgrammaSetting(showProgrammaInLibrary);
+        renderLibrary();
+        renderActiveSetlist();
+        return;
+      }
+      if (e.target.id === "file-input"){
+        var file = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (file) handleFileImport(file);
+        return;
+      }
+      if (e.target.id === "backup-import-input"){
+        var backupFile = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (backupFile) handleBackupImportFile(backupFile);
+        return;
+      }
+      if (e.target.id === "setlist-docx-input"){
+        var docxFile = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (docxFile) handleSetlistDocxImport(docxFile);
+      }
+    });
+  }
+
+  // ---------- auth gate (full-page login when required and not signed in) ----------
+  if (authGateEl){
+    authGateEl.addEventListener("submit", function(e){
+      if (e.target.id === "auth-gate-form"){
+        e.preventDefault();
+        var u = document.getElementById("auth-gate-username");
+        var p = document.getElementById("auth-gate-password");
+        var errorEl = document.getElementById("auth-gate-error");
+        handleAuthLogin(u ? u.value.trim() : "", p ? p.value : "", errorEl);
+      }
+    });
+  }
+
+
+  // ---------- mobile accordions ----------
+  var MOBILE_MEDIA_QUERY = window.matchMedia("(max-width: 980px)");
+
+  function isMobileLayout(){
+    return MOBILE_MEDIA_QUERY.matches;
+  }
+
+  function setMobilePanelCollapsed(panel, collapsed){
+    if (!panel) return;
+    panel.classList.toggle("is-collapsed", !!collapsed);
+    var header = panel.querySelector(".panel-header");
+    if (header) header.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  }
+
+  function initMobileAccordions(){
+    var panels = [
+      document.getElementById("panel-setlists"),
+      document.getElementById("panel-editor"),
+      document.getElementById("panel-library")
+    ];
+
+    panels.forEach(function(panel){
+      if (!panel) return;
+      var header = panel.querySelector(".panel-header");
+      if (!header || header.getAttribute("data-mobile-accordion") === "1") return;
+
+      header.setAttribute("data-mobile-accordion","1");
+      header.setAttribute("role","button");
+      header.setAttribute("tabindex","0");
+
+      function toggle(){
+        if (isMobileLayout()) {
+          setMobilePanelCollapsed(panel, !panel.classList.contains("is-collapsed"));
+        }
+      }
+
+      header.addEventListener("click", function(e){
+        if (e.target.closest && e.target.closest("button,input,a")) return;
+        toggle();
+      });
+
+      header.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
+
+    if (isMobileLayout()){
+      /* Setlists open for selection; active setlist closed; library open. */
+      setMobilePanelCollapsed(document.getElementById("panel-setlists"), false);
+      setMobilePanelCollapsed(document.getElementById("panel-editor"), true);
+      setMobilePanelCollapsed(document.getElementById("panel-library"), false);
+    }
+  }
+
+  function mobileSetlistSelected(){
+    if (!isMobileLayout()) return;
+    setMobilePanelCollapsed(document.getElementById("panel-setlists"), true);
+    setMobilePanelCollapsed(document.getElementById("panel-editor"), true);
+  }
+
+  initMobileAccordions();
+
+  if (MOBILE_MEDIA_QUERY.addEventListener){
+    MOBILE_MEDIA_QUERY.addEventListener("change", initMobileAccordions);
+  } else if (MOBILE_MEDIA_QUERY.addListener){
+    MOBILE_MEDIA_QUERY.addListener(initMobileAccordions);
+  }
+
+  // ---------- boot ----------
+  applyTheme(currentTheme());
+  initPanelLayout();
+  initStore();
+})();
+</script>
+
+</body>
+</html>
