@@ -1042,7 +1042,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       if (t.id === editingTrackId){
         return '' +
           '<div class="track-item editing" data-track-id="' + t.id + '">' +
-            '<span class="drag-handle" aria-hidden="true" style="visibility:hidden">' + ICON_HANDLE + '</span>' +
+            '<span class="drag-handle-mobile-mobile" aria-hidden="true" style="visibility:hidden">' + ICON_HANDLE + '</span>' +
             '<input type="text" class="input track-edit-title" id="edit-title-' + t.id + '" value="' + escapeHtml(t.title) + '" aria-label="Titel bewerken" placeholder="Titel">' +
             '<input type="text" class="input track-edit-artist" id="edit-artist-' + t.id + '" value="' + escapeHtml(t.artist || "") + '" aria-label="Artiest bewerken" placeholder="Artiest">' +
             '<input type="text" class="input track-edit-genre" id="edit-genre-' + t.id + '" value="' + escapeHtml(t.genre || "") + '" aria-label="Genre bewerken" placeholder="Genre" list="genre-datalist">' +
@@ -1057,7 +1057,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       var confirming = pendingConfirm.has(key);
       return '' +
         '<div class="track-item" draggable="true" data-track-id="' + t.id + '">' +
-          '<span class="drag-handle" aria-hidden="true">' + ICON_HANDLE + '</span>' +
+          '<span class="drag-handle-mobile" aria-hidden="true">' + ICON_HANDLE + '</span>' +
           '<span class="track-info">' +
             '<span class="track-title">' + escapeHtml(t.title) + '</span>' +
             (t.artist ? '<span class="track-artist">' + escapeHtml(t.artist) + '</span>' : '') +
@@ -1149,7 +1149,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
         '<div class="setlist-row' + (sl.id === activeSetlistId ? ' active' : '') + (manual ? ' manual' : '') + '"' +
           (manual ? ' draggable="true"' : '') +
           ' data-action="select-setlist" data-id="' + sl.id + '" role="button" tabindex="0">' +
-          (manual ? '<span class="drag-handle" aria-hidden="true">' + ICON_HANDLE + '</span>' : '') +
+          (manual ? '<span class="drag-handle-mobile" aria-hidden="true">' + ICON_HANDLE + '</span>' : '') +
           '<span class="setlist-row-main">' +
             '<span class="setlist-row-name">' + escapeHtml(sl.name) + '</span>' +
             '<span class="setlist-row-meta">' + (sl.date ? formatDateNl(sl.date) + ' · ' : '') + count + ' ' + plural(count,'nummer','nummers') + ' · ' + formatDuration(totalDurationFor(sl)) + '</span>' +
@@ -1187,7 +1187,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       var position = isPraatje ? "" : (++songPosition);
       return '' +
         '<div class="setlist-track-item' + (missing ? ' missing' : '') + '" draggable="true" data-index="' + idx + '">' +
-          '<span class="drag-handle" aria-hidden="true">' + ICON_HANDLE + '</span>' +
+          '<span class="drag-handle-mobile" aria-hidden="true">' + ICON_HANDLE + '</span>' +
           '<span class="track-position mono">' + position + '</span>' +
           '<span class="track-info">' +
             '<span class="track-title">' + (missing ? '(verwijderd nummer)' : escapeHtml(t.title)) + '</span>' +
@@ -2553,7 +2553,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   }
 
   function panelDragHandleHtml(panelId){
-    return '<span class="panel-drag-handle" draggable="true" data-panel="' + panelId + '" aria-label="' +
+    return '<span class="panel-drag-handle-mobile" draggable="true" data-panel="' + panelId + '" aria-label="' +
       PANEL_LABELS[panelId] + '-blok verslepen om te verplaatsen" title="Sleep om te verplaatsen">' + ICON_HANDLE + '</span>';
   }
 
@@ -2587,14 +2587,14 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   function initPanelReorder(){
     DEFAULT_PANEL_ORDER.forEach(function(id){
       var section = panelSectionEl(id), header = section ? section.querySelector(".panel-header") : null;
-      if (!header || header.querySelector(".panel-drag-handle")) return;
+      if (!header || header.querySelector(".panel-drag-handle-mobile")) return;
       var actions = header.querySelector(".panel-header-actions");
       if (actions) actions.insertAdjacentHTML("beforeend", panelDragHandleHtml(id));
       else header.insertAdjacentHTML("beforeend", '<span class="panel-header-actions">' + panelDragHandleHtml(id) + '</span>');
     });
     var layoutEl = document.querySelector(".layout");
     layoutEl.addEventListener("dragstart", function(e){
-      var handle = e.target.closest && e.target.closest(".panel-drag-handle");
+      var handle = e.target.closest && e.target.closest(".panel-drag-handle-mobile");
       if (!handle) return;
       panelDragId = handle.getAttribute("data-panel"); panelDragSection = panelSectionEl(panelDragId);
       if (panelDragSection) panelDragSection.classList.add("panel-dragging");
