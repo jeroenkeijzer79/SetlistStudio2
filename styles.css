@@ -60,7 +60,12 @@ img{max-width:100%;}
 
   .topbar{
     display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    /*background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);*/
+    background:linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--surface) 92%, white) 0px,
+    var(--surface) 10px
+    );
     padding:16px 20px; box-shadow:var(--shadow); position:relative; overflow:hidden;
     width:100%; max-width:100%;
   }
@@ -162,11 +167,6 @@ img{max-width:100%;}
   .theme-swatch input[type="color"]::-moz-color-swatch{border:none; border-radius:4px;}
 
   .banner{
-    background:linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--surface) 92%, white) 0px,
-    var(--surface) 30px
-    );
     border-radius:var(--radius); padding:12px 16px; font-size:.9rem; font-weight:500;
     border:1px solid var(--border); background:var(--surface-2); color:var(--text);
     display:flex; align-items:center; gap:10px;
