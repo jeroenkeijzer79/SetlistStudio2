@@ -308,6 +308,12 @@ img{max-width:100%;}
     color:var(--text); font-size:1.05rem; font-weight:700;
   }
   .track-programma{color:var(--text-muted); font-size:.88rem; flex:none; margin-right:12px;}
+  .setlist-track-item .track-title{font-weight:700; font-size:1.05rem;}
+  .setlist-track-item .track-artist{font-size:.85rem;}
+  .setlist-track-item .track-programma{
+    display:inline-flex; align-items:center; justify-content:center;
+    border:1.5px solid var(--border); border-radius:8px; padding:4px 10px; margin-right:0;
+  }
 
   .library-filters{display:flex; gap:6px;}
   .library-filters .input{flex:1; min-width:0;}
@@ -404,9 +410,12 @@ img{max-width:100%;}
   .setlist-track-item.dragging{opacity:.4;}
   .setlist-track-item.missing{border-style:dashed; color:var(--text-muted);}
   .track-position{
-    width:30px; margin-left:-3px; text-align:right; color:var(--text);
-    font-size:2rem; line-height:1.05; font-weight:700; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    width:38px; text-align:center; color:var(--text);
+    font-size:1.3rem; line-height:1; font-weight:700; flex:none;
+    border:1.5px solid var(--border); border-radius:8px; align-self:stretch;
   }
+  .track-position:empty{border-color:transparent;}
   .drop-indicator{height:3px; border-radius:2px; background:var(--accent); margin:0 4px;}
   .drop-hint{text-align:center; color:var(--text-muted); font-size:.85rem; padding:14px 6px;}
 
@@ -511,7 +520,7 @@ img{max-width:100%;}
     .setlist-track-item .track-info{min-width:0;flex:1 1 auto}
     .setlist-track-item .track-title{font-size:.92rem;line-height:1.2}
     .setlist-track-item .track-artist{font-size:.72rem}
-    .track-position{width:26px;margin-left:-2px;font-size:1.45rem;line-height:1;flex:none}
+    .track-position{width:30px;font-size:1.1rem;line-height:1;flex:none}
     .setlist-track-item .track-duration{font-size:.78rem!important;flex:none}
     .setlist-track-item .icon-btn{width:32px;height:32px}
 
