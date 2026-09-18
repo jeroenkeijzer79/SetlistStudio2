@@ -197,7 +197,7 @@ img{max-width:100%;}
   cursor:col-resize;
   touch-action:none;
 }
-  .resize-handle-bar{ width:3px; height:150px; border-radius:2px; background:var(--border); }
+  .resize-handle-bar{ width:8px; height:150px; border-radius:6px; background:var(--border); }
   .resize-handle:hover .resize-handle-bar, .resize-handle:focus-visible .resize-handle-bar{ background:var(--accent); }
   .resize-handle:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
   @media (max-width: 980px){
