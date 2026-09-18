@@ -74,7 +74,7 @@ img{max-width:100%;}
     border-radius:50%; background:transparent; color:var(--accent); flex:none;
   }
   .topbar-icon img{width:32px; height:32px; object-fit:contain; display:block;}
-  .topbar h1{font-size:1.5rem; font-weight:700;}
+  .topbar h1{font-size:1.3rem; font-weight:700;}
   .topbar-sub{margin:2px 0 0; color:var(--text-muted); font-size:.9rem;}
   .topbar-stats{display:flex; gap:8px; flex-wrap:wrap;}
   .stat-chip{
