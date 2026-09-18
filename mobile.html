@@ -2586,11 +2586,11 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   }
   function initPanelReorder(){
     DEFAULT_PANEL_ORDER.forEach(function(id){
-      var section = panelSectionEl(id), header = section ? section.querySelector(".panel-header") : null;
+      var section = panelSectionEl(id), header = section ? section.querySelector(".panel-header-mobile") : null;
       if (!header || header.querySelector(".panel-drag-handle-mobile")) return;
-      var actions = header.querySelector(".panel-header-actions");
+      var actions = header.querySelector(".panel-header-mobile-actions");
       if (actions) actions.insertAdjacentHTML("beforeend", panelDragHandleHtml(id));
-      else header.insertAdjacentHTML("beforeend", '<span class="panel-header-actions">' + panelDragHandleHtml(id) + '</span>');
+      else header.insertAdjacentHTML("beforeend", '<span class="panel-header-mobile-actions">' + panelDragHandleHtml(id) + '</span>');
     });
     var layoutEl = document.querySelector(".layout");
     layoutEl.addEventListener("dragstart", function(e){
@@ -2813,7 +2813,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   function setMobilePanelCollapsed(panel, collapsed){
     if (!panel) return;
     panel.classList.toggle("is-collapsed", !!collapsed);
-    var header = panel.querySelector(".panel-header");
+    var header = panel.querySelector(".panel-header-mobile");
     if (header) header.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
 
@@ -2826,7 +2826,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
 
     panels.forEach(function(panel){
       if (!panel) return;
-      var header = panel.querySelector(".panel-header");
+      var header = panel.querySelector(".panel-header-mobile");
       if (!header || header.getAttribute("data-mobile-accordion") === "1") return;
 
       header.setAttribute("data-mobile-accordion","1");
