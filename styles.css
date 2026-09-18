@@ -184,7 +184,7 @@ img{max-width:100%;}
        content lands in which track is controlled by the `order` CSS
        property, set from panelOrder in JS, so blocks can be rearranged
        while each slot keeps its own resizable width. */
-    grid-template-columns: minmax(240px, var(--w-col1, 1.75fr)) 14px minmax(240px, var(--w-col2, 1.55fr)) 14px minmax(320px, 1fr);
+    grid-template-columns: minmax(240px, var(--w-col1, 1.75fr)) 22px minmax(240px, var(--w-col2, 1.55fr)) 14px minmax(320px, 1fr);
     gap:0; align-items:start;
   }
   .resize-handle{
