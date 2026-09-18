@@ -175,22 +175,28 @@ img{max-width:100%;}
   .banner.success{ border-color:var(--success); color:var(--success); background:color-mix(in srgb, var(--success) 12%, var(--surface)); }
   .banner.danger{ border-color:var(--danger); color:var(--danger); background:color-mix(in srgb, var(--danger) 12%, var(--surface)); }
 
-  .layout{
-    display:grid;
-    /* fr-based tracks scale proportionally as the window resizes;
-       dragging a handle sets a new ratio (see resize JS below). */
-    /* The three named tracks below are POSITIONAL (slot 1/2/3, left to
-       right), not tied to a specific panel's identity — which panel's
-       content lands in which track is controlled by the `order` CSS
-       property, set from panelOrder in JS, so blocks can be rearranged
-       while each slot keeps its own resizable width. */
-    grid-template-columns: minmax(240px, var(--w-col1, 1.75fr)) 22px minmax(240px, var(--w-col2, 1.55fr)) 22px minmax(320px, 1fr);
-    gap:0; align-items:start;
-  }
-  .resize-handle{
-    display:flex; align-items:center; justify-content:center; align-self:stretch;
-    cursor:col-resize; touch-action:none; border-radius:4px;
-  }
+.layout{
+  display:grid;
+  grid-template-columns:
+    minmax(240px, var(--w-col1, 1.75fr))
+    30px
+    minmax(240px, var(--w-col2, 1.55fr))
+    30px
+    minmax(320px, 1fr);
+  gap:0;
+  align-items:start;
+}
+
+.resize-handle{
+  width:6px;
+  justify-self:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  align-self:stretch;
+  cursor:col-resize;
+  touch-action:none;
+}
   .resize-handle-bar{ width:3px; height:150px; border-radius:2px; background:var(--border); }
   .resize-handle:hover .resize-handle-bar, .resize-handle:focus-visible .resize-handle-bar{ background:var(--accent); }
   .resize-handle:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
