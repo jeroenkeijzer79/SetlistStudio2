@@ -188,7 +188,7 @@ img{max-width:100%;}
 }
 
 .resize-handle{
-  width:6px;
+  width:10px;
   justify-self:center;
   display:flex;
   align-items:center;
