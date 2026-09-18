@@ -64,7 +64,7 @@ img{max-width:100%;}
     background:linear-gradient(
     to bottom,
     color-mix(in srgb, var(--surface) 92%, white) 0px,
-    var(--surface) 10px
+    var(--surface) 20px
     );
     padding:16px 20px; box-shadow:var(--shadow); position:relative; overflow:hidden;
     width:100%; max-width:100%;
