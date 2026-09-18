@@ -229,8 +229,8 @@ img{max-width:100%;}
   gap:12px;
   min-height:0;
 }
-  .panel-header{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-top: -15px;}
-  .panel-header-mobile{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  
+  .panel-header{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
   .panel-header h2{font-size:1.05rem; font-weight:600;}
 
   .btn{
