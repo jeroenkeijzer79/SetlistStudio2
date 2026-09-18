@@ -266,8 +266,7 @@ img{max-width:100%;}
   .panel-drag-handle:hover{background:var(--surface-2); color:var(--text);}
   .panel-drag-handle:active{cursor:grabbing;}
   .panel-drag-handle{height: 36px;width: auto;transform: translate(2px, 4px);}
-
-svg{width:14px; height:18px;}
+  .panel-drag-handle svg{width:14px; height:18px;}
   .panel.panel-dragging{opacity:.92; box-shadow:0 12px 32px rgba(0,0,0,.5); outline:2px solid var(--accent); outline-offset:-2px;}
   .panel.panel-drop-target{outline:2px dashed var(--accent); outline-offset:-3px;}
 
@@ -298,8 +297,8 @@ svg{width:14px; height:18px;}
   .track-edit-genre{flex:.8; min-width:0;}
   .track-edit-programma{width:80px; flex:none;}
   .track-edit-duration{width:70px; flex:none;}
-  .drag-handle{color:var(--text-muted); display:flex; flex:none;}
-  .drag-handle svg{width:14px; height:18px;}
+  .drag-handle{color:var(--text-muted); display:flex; align-items:center; justify-content:center; flex:none; align-self:stretch; width:14px;}
+  .drag-handle svg{width:100%; height:100%;}
   .track-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px;}
   .track-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;}
   .track-artist{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.76rem; color:var(--text-muted); font-weight:400;}
@@ -493,8 +492,7 @@ svg{width:14px; height:18px;}
     .track-artist{font-size:.72rem}
     .track-duration,.track-programma{font-size:.8rem!important}
     .track-programma{margin-right:0}
-    .drag-handle{width:18px;justify-content:center}
-    .drag-handle svg{width:12px;height:16px}
+    .drag-handle{width:12px;justify-content:center}
 
     #editor-panel{width:100%;min-width:0}
     .editor-header{width:100%;gap:7px}
