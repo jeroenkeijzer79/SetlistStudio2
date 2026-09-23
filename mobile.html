@@ -190,7 +190,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   var THEME_KEY = "setlist-studio:theme";
   var THEME_LIBRARY_KEY = "setlist-studio:themes";
   var THEME_DEFAULT_KEY = "setlist-studio:default-theme";
-  var DEFAULT_THEME = {bg:"#161616", surface:"#232323", surface2:"#2d2b29", border:"#413e3a", accent:"#f4673b", text:"#f5f3f0", textMuted:"#a89f96", shadowColor:"#000000"};
+  var DEFAULT_THEME = {bg:"#161616", surface:"#232323", surface2:"#2d2b29", border:"#413e3a", accent:"#f4673b", text:"#f5f3f0", textMuted:"#a89f96", shadowColor:"#000000", resizeHandleColor:"#413e3a"};
 
   function loadThemeOverride(){
     try{
@@ -274,6 +274,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     root.setProperty("--text", theme.text);
     root.setProperty("--text-muted", theme.textMuted);
     root.setProperty("--shadow-color", theme.shadowColor || "#000000");
+    root.setProperty("--resize-handle-color", theme.resizeHandleColor || theme.border || "#413e3a");
     root.setProperty("--accent", theme.accent);
     root.setProperty("--accent-strong", darkenHex(theme.accent, 0.15));
     root.setProperty("--accent-contrast", relativeLuminance(theme.accent) > 0.45 ? "#20120a" : "#fdf6f0");
@@ -517,7 +518,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       {id:"theme-accent", key:"accent", label:"Knoppen"},
       {id:"theme-text", key:"text", label:"Tekst"},
       {id:"theme-textmuted", key:"textMuted", label:"Tekst (gedempt)"},
-      {id:"theme-shadow", key:"shadowColor", label:"Drop-shadow"}
+      {id:"theme-shadow", key:"shadowColor", label:"Drop-shadow"},
+      {id:"theme-resize-handle", key:"resizeHandleColor", label:"Resize handles"}
     ];
     var savedHtml = savedThemes.length ? '<div class="saved-themes">' +
       '<h4 class="settings-subheading">Opgeslagen thema\'s</h4>' +
@@ -2863,7 +2865,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       if (!e.target.id || e.target.id.indexOf("theme-") !== 0) return;
       var themeInputMap = {
         "theme-bg": "bg", "theme-surface": "surface", "theme-surface2": "surface2", "theme-border": "border",
-        "theme-accent": "accent", "theme-text": "text", "theme-textmuted": "textMuted", "theme-shadow": "shadowColor"
+        "theme-accent": "accent", "theme-text": "text", "theme-textmuted": "textMuted", "theme-shadow": "shadowColor",
+    "theme-resize-handle": "resizeHandleColor"
       };
       var themeKey = themeInputMap[e.target.id];
       if (!themeKey) return;
