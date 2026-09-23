@@ -2554,27 +2554,20 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
 
   function applyPanelLayout(){
     var layoutEl = document.querySelector(".layout");
-    /* Desktop layout is intentionally fixed: Setlists is the left sidebar,
-       Library and Active setlist are the two resizable content blocks. */
-    var setlistsSection = panelSectionEl("setlists");
-    var librarySection = panelSectionEl("library");
-    var editorSection = panelSectionEl("editor");
-    if (setlistsSection) setlistsSection.style.order = 0;
-    if (librarySection) librarySection.style.order = 2;
-    if (editorSection) editorSection.style.order = 4;
-
+    panelOrder.forEach(function(id, i){
+      var section = panelSectionEl(id);
+      if (section) section.style.order = i * 2;
+    });
     var handle1 = document.getElementById("resize-handle-1");
     var handle2 = document.getElementById("resize-handle-2");
     if (handle1) handle1.style.order = 1;
     if (handle2) handle2.style.order = 3;
-
-    if (typeof panelWidthsPx.library === "number") {
-      layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx.library) + "px");
-    } else {
-      layoutEl.style.setProperty("--w-col2", panelWidths.library + "fr");
-    }
+    var id1 = panelOrder[0], id2 = panelOrder[1];
+    if (typeof panelWidthsPx[id1] === "number") layoutEl.style.setProperty("--w-col1", clampPx(panelWidthsPx[id1]) + "px");
+    else layoutEl.style.setProperty("--w-col1", panelWidths[id1] + "fr");
+    if (typeof panelWidthsPx[id2] === "number") layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx[id2]) + "px");
+    else layoutEl.style.setProperty("--w-col2", panelWidths[id2] + "fr");
   }
-
 
   var panelDragId = null;
   var panelDragSection = null;
@@ -2627,106 +2620,48 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
 
   function initResizers(){
     var layoutEl = document.querySelector(".layout");
-    var librarySection = panelSectionEl("library");
-    var editorSection = panelSectionEl("editor");
-
-    function libraryPx(){ return panelPx(librarySection); }
-
-    function lockCurrentWidth(){
-      var px = libraryPx();
-      if (px > 0) panelWidthsPx.library = clampPx(px);
-      if (typeof panelWidthsPx.library === "number"){
-        layoutEl.style.setProperty("--w-col2", panelWidthsPx.library + "px");
-      }
+    function slotEl(slotIndex){ return panelSectionEl(panelOrder[slotIndex]); }
+    function lockCurrentWidths(){
+      [0,1].forEach(function(i){
+        var id=panelOrder[i], px=panelPx(slotEl(i));
+        if (px>0) panelWidthsPx[id]=clampPx(px);
+      });
+      if (typeof panelWidthsPx[panelOrder[0]] === "number") layoutEl.style.setProperty("--w-col1", panelWidthsPx[panelOrder[0]]+"px");
+      if (typeof panelWidthsPx[panelOrder[1]] === "number") layoutEl.style.setProperty("--w-col2", panelWidthsPx[panelOrder[1]]+"px");
       savePanelWidths();
     }
-
-    function dynamicMaxPx(){
-      var editor = panelPx(editorSection);
-      var sidebar = document.getElementById("panel-setlists");
-      var sidebarWidth = sidebar ? panelPx(sidebar) : 320;
-      var reserve = editor + sidebarWidth + 14 + 30 + 48;
-      return Math.max(240, Math.min(1400, window.innerWidth - reserve));
+    function dynamicMaxPx(slotIndex){
+      var other = slotIndex === 0 ? panelPx(slotEl(1)) : panelPx(slotEl(0));
+      var reserve = other + 14 + 14 + 320 + 32;
+      return Math.max(RESIZE_MIN_PX, Math.min(RESIZE_MAX_PX, window.innerWidth-reserve));
     }
-
-    var handle = document.getElementById("resize-handle-2");
-    if (!handle) return;
-
-    var dragging = false, startX = 0, startWidth = 0;
-    handle.addEventListener("pointerdown", function(e){
-      if (window.innerWidth < STACK_BREAKPOINT) return;
-      lockCurrentWidth();
-      dragging = true;
-      startX = e.clientX;
-      startWidth = libraryPx();
-      try{ handle.setPointerCapture(e.pointerId); }catch(err){}
-      document.body.style.userSelect = "none";
-    });
-    handle.addEventListener("pointermove", function(e){
-      if (!dragging) return;
-      var next = Math.max(240, Math.min(dynamicMaxPx(), startWidth + (e.clientX - startX)));
-      layoutEl.style.setProperty("--w-col2", next + "px");
-    });
-    function endDrag(){
-      if (!dragging) return;
-      dragging = false;
-      document.body.style.userSelect = "";
-      var px = libraryPx();
-      panelWidthsPx.library = clampPx(px);
-      savePanelWidths();
-    }
-    handle.addEventListener("pointerup", endDrag);
-    handle.addEventListener("pointercancel", endDrag);
-    handle.addEventListener("keydown", function(e){
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      e.preventDefault();
-      lockCurrentWidth();
-      var next = Math.max(240, Math.min(dynamicMaxPx(), libraryPx() + (e.key === "ArrowRight" ? 24 : -24)));
-      layoutEl.style.setProperty("--w-col2", next + "px");
-      panelWidthsPx.library = clampPx(next);
-      savePanelWidths();
-    });
-    lockCurrentWidth();
-  }
-
-  function initSetlistsSidebar(){
-    var panel = document.getElementById("panel-setlists");
-    var btn = document.getElementById("setlists-sidebar-toggle");
-    if (!panel || !btn) return;
-
-    var key = "setlist-studio:setlists-sidebar-collapsed";
-    var collapsed = false;
-    try{ collapsed = window.localStorage.getItem(key) === "1"; }catch(e){}
-
-    function apply(){
-      panel.classList.toggle("is-sidebar-collapsed", collapsed);
-      btn.setAttribute("aria-label", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
-      btn.setAttribute("title", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
-      if (collapsed){
-        panel.style.setProperty("--setlists-width", "48px");
-      } else {
-        panel.style.removeProperty("--setlists-width");
+    function setupResizeHandle(handle, slotIndex, colVar){
+      if (!handle) return;
+      var dragging=false,startX=0,startWidth=0;
+      handle.addEventListener("pointerdown",function(e){
+        if(window.innerWidth<STACK_BREAKPOINT)return;
+        lockCurrentWidths(); dragging=true; startX=e.clientX; startWidth=panelPx(slotEl(slotIndex));
+        try{handle.setPointerCapture(e.pointerId);}catch(err){} document.body.style.userSelect="none";
+      });
+      handle.addEventListener("pointermove",function(e){
+        if(!dragging)return;
+        var next=Math.max(RESIZE_MIN_PX,Math.min(dynamicMaxPx(slotIndex),startWidth+(e.clientX-startX)));
+        layoutEl.style.setProperty(colVar,next+"px");
+      });
+      function endDrag(){
+        if(!dragging)return; dragging=false; document.body.style.userSelect="";
+        var id=panelOrder[slotIndex], px=panelPx(slotEl(slotIndex)); panelWidthsPx[id]=clampPx(px); savePanelWidths();
       }
+      handle.addEventListener("pointerup",endDrag); handle.addEventListener("pointercancel",endDrag);
+      handle.addEventListener("keydown",function(e){
+        if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return; e.preventDefault(); lockCurrentWidths();
+        var next=Math.max(RESIZE_MIN_PX,Math.min(dynamicMaxPx(slotIndex),panelPx(slotEl(slotIndex))+(e.key==="ArrowRight"?24:-24)));
+        layoutEl.style.setProperty(colVar,next+"px"); panelWidthsPx[panelOrder[slotIndex]]=clampPx(next); savePanelWidths();
+      });
     }
-    btn.addEventListener("click", function(){
-      collapsed = !collapsed;
-      try{ window.localStorage.setItem(key, collapsed ? "1" : "0"); }catch(e){}
-      apply();
-      requestAnimationFrame(function(){ initResizersAfterSidebarChange(); });
-    });
-    apply();
-
-    function initResizersAfterSidebarChange(){
-      var layoutEl = document.querySelector(".layout");
-      var lib = document.getElementById("panel-library");
-      if (!layoutEl || !lib) return;
-      var px = lib.getBoundingClientRect().width;
-      if (px > 0){
-        panelWidthsPx.library = clampPx(px);
-        layoutEl.style.setProperty("--w-col2", panelWidthsPx.library + "px");
-        savePanelWidths();
-      }
-    }
+    lockCurrentWidths();
+    setupResizeHandle(document.getElementById("resize-handle-1"),0,"--w-col1");
+    setupResizeHandle(document.getElementById("resize-handle-2"),1,"--w-col2");
   }
 
   function initPanelLayout(){
