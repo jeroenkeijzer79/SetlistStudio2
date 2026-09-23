@@ -67,7 +67,7 @@ img{max-width:100%;}
     var(--surface) 20px
     );
     padding:16px 20px; box-shadow:var(--shadow); position:relative; overflow:hidden;
-    width:100%; max-width:100%;
+    width:100vw; max-width:none; margin:0; align-self:stretch;
   }
   .topbar::before{
     content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
