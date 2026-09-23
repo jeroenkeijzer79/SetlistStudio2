@@ -23,6 +23,7 @@ img{max-width:100%;}
     --success:#6fbf82;
     --warn:#e8b23d;
     --shadow:0 1px 2px color-mix(in srgb, var(--shadow-color, #000000) 35%, transparent), 0 4px 18px color-mix(in srgb, var(--shadow-color, #000000) 40%, transparent);
+  --resize-handle-color:#413e3a;
     --radius:10px;
   }
 
@@ -265,7 +266,7 @@ img{max-width:100%;}
   cursor:col-resize;
   touch-action:none;
 }
-  .resize-handle-bar{ width:8px; height:150px; border-radius:6px; background:var(--border); }
+  .resize-handle-bar{ width:8px; height:150px; border-radius:6px; background:var(--resize-handle-color, var(--border)); }
   .resize-handle:hover .resize-handle-bar, .resize-handle:focus-visible .resize-handle-bar{ background:var(--accent); }
   .resize-handle:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
 
