@@ -449,16 +449,26 @@ img{max-width:100%;}
 
   /* ========================= FOLDABLE SETLISTS SIDEBAR ========================= */
   @media (min-width:981px){
-    /* The Setlists area is a real application sidebar rather than a third card.
-       It overlays the workspace when open, so closing it gives the other panels
-       the full available width. */
+    /* The workspace contains only Library + Active Setlist. Setlists is a
+       fixed navigation sidebar and never participates in the workspace grid. */
     .layout{
       position:relative;
-      grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-      gap:14px;
-      transition:none;
+      display:grid;
+      grid-template-columns:minmax(300px,var(--w-col1,1fr)) 10px minmax(320px,var(--w-col2,1fr));
+      grid-template-rows:minmax(0,1fr);
+      gap:0;
+      width:100%;
+      min-width:0;
+      min-height:0;
+      align-items:stretch;
     }
 
+    .layout > .panel-library{grid-column:1;grid-row:1;}
+    .layout > .panel-editor{grid-column:3;grid-row:1;}
+    .layout > #resize-handle-1{grid-column:2;grid-row:1;display:flex!important;}
+    .layout > #resize-handle-2{display:none!important;}
+
+    /* Setlists is completely outside the workspace flow. */
     .layout > .panel-setlists{
       position:fixed;
       z-index:1200;
@@ -477,37 +487,37 @@ img{max-width:100%;}
       background:var(--surface);
       box-shadow:16px 0 42px rgba(0,0,0,.30);
       overflow:hidden;
-      transform:translateX(0);
-      transition:transform .30s cubic-bezier(.22,.61,.36,1), box-shadow .30s ease;
+      transform:translate3d(0,0,0);
+      visibility:visible;
+      opacity:1;
+      transition:transform .30s cubic-bezier(.22,.61,.36,1),opacity .20s ease,visibility 0s linear 0s;
       display:flex;
       flex-direction:column;
     }
 
+    /* When closed it is genuinely removed from view; it does not sit on top
+       of or underneath the two workspace panels. */
     .layout.setlists-sidebar-collapsed > .panel-setlists{
-      transform:translateX(-100%);
-      box-shadow:none;
+      transform:translate3d(-105%,0,0);
+      opacity:0;
+      visibility:hidden;
       pointer-events:none;
+      box-shadow:none;
+      transition:transform .30s cubic-bezier(.22,.61,.36,1),opacity .18s ease,visibility 0s linear .30s;
     }
 
-    .layout > .resize-handle,
-    .panel-setlists .panel-drag-handle{
-      display:none !important;
-    }
+    .layout > .panel-setlists .panel-drag-handle{display:none!important;}
 
-    /* Sidebar header: compact, flat and app-like. */
     .panel-setlists .panel-header{
       flex:none;
       min-height:72px;
       padding:18px 16px 14px 20px;
       border-bottom:1px solid var(--border);
-      background:linear-gradient(to bottom,
-        color-mix(in srgb,var(--surface-2) 72%,var(--surface)),
-        var(--surface));
+      background:linear-gradient(to bottom,color-mix(in srgb,var(--surface-2) 72%,var(--surface)),var(--surface));
       display:flex;
       align-items:center;
       gap:10px;
     }
-
     .panel-setlists .panel-header h2{
       font-family:"Poppins","Inter",sans-serif;
       font-size:1rem;
@@ -516,157 +526,44 @@ img{max-width:100%;}
       text-transform:uppercase;
       color:var(--text);
     }
-
     .setlists-sidebar-toggle{
-      margin-left:auto;
-      width:34px;
-      height:34px;
-      flex:none;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:transparent;
-      color:var(--text-muted);
+      margin-left:auto;width:34px;height:34px;flex:none;
+      border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-muted);
       transition:background .15s ease,color .15s ease,border-color .15s ease;
     }
-    .setlists-sidebar-toggle:hover{
-      color:var(--text);
-      background:var(--surface-2);
-      border-color:var(--accent);
-    }
-    .setlists-sidebar-toggle svg{width:17px;height:17px;}
-
+    .setlists-sidebar-toggle:hover{color:var(--text);background:var(--surface-2);border-color:var(--accent)}
+    .setlists-sidebar-toggle svg{width:17px;height:17px}
     .panel-setlists .setlists-filters{
-      flex:none;
-      padding:12px 14px;
-      border-bottom:1px solid color-mix(in srgb,var(--border) 75%,transparent);
-      background:var(--surface);
-      display:flex;
-      align-items:center;
-      gap:8px;
+      flex:none;padding:12px 14px;border-bottom:1px solid color-mix(in srgb,var(--border) 75%,transparent);
+      background:var(--surface);display:flex;align-items:center;gap:8px;
     }
+    .panel-setlists .setlist-filter-toggle{flex:1;min-width:0;min-height:36px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:.78rem}
+    .panel-setlists #new-setlist-btn{width:36px;height:36px;min-width:36px;padding:8px;margin-left:0;border-radius:8px}
+    .panel-setlists #new-setlist-form-slot{flex:none;padding:0 14px}
+    .panel-setlists .setlists-list{flex:1;min-height:0;overflow-y:auto;padding:8px 10px 20px;background:var(--surface)}
+    .panel-setlists .setlist-row{border:1px solid transparent;border-radius:8px;margin:2px 0;transition:background .16s ease,border-color .16s ease,transform .20s cubic-bezier(.22,.61,.36,1),box-shadow .20s ease}
+    .panel-setlists .setlist-row:hover{background:var(--surface-2);border-color:var(--border)}
+    .panel-setlists .setlist-row.active{border-color:color-mix(in srgb,var(--accent) 60%,var(--border));background:color-mix(in srgb,var(--accent) 11%,var(--surface-2))}
 
-    .panel-setlists .setlist-filter-toggle{
-      flex:1;
-      min-width:0;
-      min-height:36px;
-      padding:7px 10px;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:var(--surface-2);
-      font-size:.78rem;
-    }
-
-    .panel-setlists #new-setlist-btn{
-      width:36px;
-      height:36px;
-      min-width:36px;
-      padding:8px;
-      margin-left:0;
-      border-radius:8px;
-    }
-
-    .panel-setlists #new-setlist-form-slot{
-      flex:none;
-      padding:0 14px;
-    }
-
-    .panel-setlists .setlists-list{
-      flex:1;
-      min-height:0;
-      overflow-y:auto;
-      padding:8px 10px 20px;
-      background:var(--surface);
-    }
-
-    .panel-setlists .setlist-row{
-      border:1px solid transparent;
-      border-radius:8px;
-      margin:2px 0;
-      transition:background .16s ease,border-color .16s ease,transform .20s cubic-bezier(.22,.61,.36,1),box-shadow .20s ease;
-    }
-    .panel-setlists .setlist-row:hover{
-      background:var(--surface-2);
-      border-color:var(--border);
-    }
-    .panel-setlists .setlist-row.active{
-      border-color:color-mix(in srgb,var(--accent) 60%,var(--border));
-      background:color-mix(in srgb,var(--accent) 11%,var(--surface-2));
-    }
-
-    /* Slim reopen rail. It intentionally looks like navigation, not like the
-       old Setlists block. */
     .setlists-sidebar-tab{
-      position:fixed;
-      z-index:1199;
-      left:0;
-      top:50%;
-      width:46px;
-      height:122px;
-      transform:translateY(-50%);
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      padding:10px 6px;
-      border:1px solid var(--border);
-      border-left:0;
-      border-radius:0 9px 9px 0;
-      background:var(--surface);
-      color:var(--text-muted);
-      box-shadow:var(--shadow);
-      cursor:pointer;
-      transition:width .16s ease,background .16s ease,color .16s ease,border-color .16s ease;
+      position:fixed;z-index:1199;left:0;top:50%;width:46px;height:122px;transform:translateY(-50%);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px 6px;
+      border:1px solid var(--border);border-left:0;border-radius:0 9px 9px 0;background:var(--surface);color:var(--text-muted);
+      box-shadow:var(--shadow);cursor:pointer;transition:width .16s ease,background .16s ease,color .16s ease,border-color .16s ease;
     }
-    .setlists-sidebar-tab:hover{
-      width:52px;
-      color:var(--text);
-      background:var(--surface-2);
-      border-color:var(--accent);
-    }
-    .setlists-sidebar-tab-icon{display:flex;align-items:center;justify-content:center;}
-    .setlists-sidebar-tab svg{width:17px;height:17px;}
-    .setlists-sidebar-tab span:last-child{
-      writing-mode:vertical-rl;
-      text-orientation:mixed;
-      font-size:.72rem;
-      font-weight:700;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-    }
+    .setlists-sidebar-tab:hover{width:52px;color:var(--text);background:var(--surface-2);border-color:var(--accent)}
+    .setlists-sidebar-tab-icon{display:flex;align-items:center;justify-content:center}
+    .setlists-sidebar-tab svg{width:17px;height:17px}
+    .setlists-sidebar-tab span:last-child{writing-mode:vertical-rl;text-orientation:mixed;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 
-    /* Drag/drop feedback remains, but without turning the sidebar back into a card. */
-    .panel{
-      transition:transform .24s cubic-bezier(.22,.61,.36,1),opacity .18s ease,box-shadow .24s ease;
-      will-change:transform;
-    }
-    .panel.panel-dragging{
-      transform:scale(.985) rotate(.15deg);
-      opacity:.78;
-      box-shadow:0 18px 46px rgba(0,0,0,.58);
-    }
-    .panel.panel-drop-target{
-      transform:scale(1.008);
-      box-shadow:0 0 0 2px var(--accent),0 12px 34px rgba(0,0,0,.4);
-    }
-    .setlist-row,.setlist-track-item,.track-item{
-      transition:transform .20s cubic-bezier(.22,.61,.36,1),opacity .18s ease,box-shadow .20s ease;
-    }
-    .setlist-row.dragging,.setlist-track-item.dragging,.track-item.dragging{
-      opacity:.45;
-      transform:scale(.985);
-      box-shadow:0 8px 22px rgba(0,0,0,.32);
-    }
-    .drop-indicator{
-      position:relative;
-      height:4px;
-      min-height:4px;
-      border-radius:3px;
-      background:var(--accent);
-      margin:1px 4px;
-      box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),0 0 12px color-mix(in srgb,var(--accent) 45%,transparent);
-      animation:dropIndicatorPulse .75s ease-in-out infinite alternate;
-    }
+    /* Workspace resizing + drag/drop animation. */
+    .resize-handle{width:10px;justify-self:center;align-self:stretch;cursor:col-resize;touch-action:none}
+    .panel{transition:transform .24s cubic-bezier(.22,.61,.36,1),opacity .18s ease,box-shadow .24s ease;will-change:transform}
+    .panel.panel-dragging{transform:scale(.985) rotate(.15deg);opacity:.78;box-shadow:0 18px 46px rgba(0,0,0,.58)}
+    .panel.panel-drop-target{transform:scale(1.008);box-shadow:0 0 0 2px var(--accent),0 12px 34px rgba(0,0,0,.4)}
+    .setlist-row,.setlist-track-item,.track-item{transition:transform .20s cubic-bezier(.22,.61,.36,1),opacity .18s ease,box-shadow .20s ease}
+    .setlist-row.dragging,.setlist-track-item.dragging,.track-item.dragging{opacity:.45;transform:scale(.985);box-shadow:0 8px 22px rgba(0,0,0,.32)}
+    .drop-indicator{position:relative;height:4px;min-height:4px;border-radius:3px;background:var(--accent);margin:1px 4px;box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),0 0 12px color-mix(in srgb,var(--accent) 45%,transparent);animation:dropIndicatorPulse .75s ease-in-out infinite alternate}
     @keyframes dropIndicatorPulse{from{opacity:.55;transform:scaleX(.985)}to{opacity:1;transform:scaleX(1)}}
   }
 
