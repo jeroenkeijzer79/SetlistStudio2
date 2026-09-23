@@ -2292,7 +2292,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   var setlistsPanel = document.getElementById("panel-setlists");
   var layoutForSidebar = document.querySelector(".layout");
   var collapseSetlistsBtn = document.getElementById("toggle-setlists-sidebar");
-  var reopenSetlistsBtn = document.getElementById("reopen-setlists-sidebar");
+  var reopenSetlistsBtn = null;
   function setlistsSidebarCollapsed(collapsed){
     if (!layoutForSidebar) return;
     layoutForSidebar.classList.toggle("setlists-collapsed", !!collapsed);
@@ -2586,8 +2586,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     if (handle1) handle1.style.order = 1;
     if (handle2) handle2.style.order = 3;
     var id1 = "setlists", id2 = "library";
-    if (typeof panelWidthsPx[id1] === "number") layoutEl.style.setProperty("--w-col1", clampPx(panelWidthsPx[id1]) + "px");
-    else layoutEl.style.setProperty("--w-col1", panelWidths[id1] + "fr");
+    if (typeof panelWidthsPx[id1] === "number") layoutEl.style.setProperty("--w-sidebar", clampPx(panelWidthsPx[id1]) + "px");
+    else layoutEl.style.setProperty("--w-sidebar", panelWidths[id1] + "fr");
     if (typeof panelWidthsPx[id2] === "number") layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx[id2]) + "px");
     else layoutEl.style.setProperty("--w-col2", panelWidths[id2] + "fr");
   }
@@ -2650,7 +2650,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
         var id=panelOrder[i], px=panelPx(slotEl(i));
         if (px>0) panelWidthsPx[id]=clampPx(px);
       });
-      if (typeof panelWidthsPx[panelOrder[0]] === "number") layoutEl.style.setProperty("--w-col1", panelWidthsPx[panelOrder[0]]+"px");
+      if (typeof panelWidthsPx[panelOrder[0]] === "number") layoutEl.style.setProperty("--w-sidebar", panelWidthsPx[panelOrder[0]]+"px");
       if (typeof panelWidthsPx[panelOrder[1]] === "number") layoutEl.style.setProperty("--w-col2", panelWidthsPx[panelOrder[1]]+"px");
       savePanelWidths();
     }
@@ -2684,7 +2684,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       });
     }
     lockCurrentWidths();
-    // The Setlists sidebar has a fixed width; only the two content panels are resizable.
+    // The Setlists sidebar and the Library panel are both resizable.
+    setupResizeHandle(document.getElementById("resize-handle-1"),0,"--w-sidebar");
     setupResizeHandle(document.getElementById("resize-handle-2"),1,"--w-col2");
   }
 
