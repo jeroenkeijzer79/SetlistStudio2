@@ -74,12 +74,12 @@ img{max-width:100%;}
     content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
     background:var(--accent);
   }
-  .topbar-title{display:flex; align-items:center; gap:14px;}
+  .topbar-title{display:flex; align-items:center; gap:14px; transform:translateX(-10px);}
   .topbar-icon{
     display:flex; align-items:center; justify-content:center; width:44px; height:44px;
     border-radius:50%; background:transparent; color:var(--accent); flex:none;
   }
-  .topbar-icon img{width:32px; height:32px; object-fit:contain; display:block; transform:translateX(-10px);}
+  .topbar-icon img{width:32px; height:32px; object-fit:contain; display:block;}
   .topbar h1{font-size:1.3rem; font-weight:700;}
   .topbar-sub{margin:2px 0 0; color:var(--text-muted); font-size:.9rem;}
   .topbar-stats{display:flex; gap:8px; flex-wrap:wrap;}
