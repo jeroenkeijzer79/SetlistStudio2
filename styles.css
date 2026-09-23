@@ -165,6 +165,13 @@ img{max-width:100%;}
   .theme-swatch input[type="color"]::-webkit-color-swatch-wrapper{padding:2px;}
   .theme-swatch input[type="color"]::-webkit-color-swatch{border:none; border-radius:4px;}
   .theme-swatch input[type="color"]::-moz-color-swatch{border:none; border-radius:4px;}
+  .theme-save-row{display:flex; align-items:center; gap:8px; width:100%; max-width:520px;}
+  .theme-save-row .input{flex:1; min-width:0;}
+  .saved-themes{display:flex; flex-direction:column; gap:8px; width:100%; max-width:760px;}
+  .saved-theme-row{display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2);}
+  .saved-theme-name{font-weight:600; color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .saved-theme-default{font-size:.72rem; font-weight:500; color:var(--accent); margin-left:5px;}
+  .saved-theme-actions{display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; flex:none;}
 
   .banner{
     border-radius:var(--radius); padding:12px 16px; font-size:.9rem; font-weight:500;
