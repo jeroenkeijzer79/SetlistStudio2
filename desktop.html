@@ -2607,6 +2607,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   }
   function initPanelReorder(){
     DEFAULT_PANEL_ORDER.forEach(function(id){
+      if (id === "setlists") return; // Setlists is a fixed sidebar, not a draggable panel.
       var section = panelSectionEl(id), header = section ? section.querySelector(".panel-header") : null;
       if (!header || header.querySelector(".panel-drag-handle")) return;
       var actions = header.querySelector(".panel-header-actions");
@@ -2637,7 +2638,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       if (Array.prototype.indexOf.call(e.dataTransfer.types, "application/x-panel-reorder") === -1) return;
       var targetSection = e.target.closest && e.target.closest(".panel"); clearPanelDropTargets(); if (!targetSection){ panelDragId=null; return; }
       e.preventDefault(); var targetId=panelIdForSection(targetSection), draggedId=panelDragId; panelDragId=null;
-      if (!targetId || targetId===draggedId) return;
+      if (!targetId || targetId==="setlists" || draggedId==="setlists" || targetId===draggedId) return;
       var rect=targetSection.getBoundingClientRect(), before=e.clientX < rect.left+rect.width/2, copy=panelOrder.slice(), fromIdx=copy.indexOf(draggedId);
       if (fromIdx===-1) return; copy.splice(fromIdx,1); var insertAt=copy.indexOf(targetId); if (insertAt===-1) return;
       if (!before) insertAt+=1; copy.splice(insertAt,0,draggedId); panelOrder=copy; savePanelOrder(); applyPanelLayout();
