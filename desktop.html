@@ -2299,6 +2299,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   function setlistsSidebarCollapsed(collapsed){
     if (!layoutForSidebar) return;
     layoutForSidebar.classList.toggle("setlists-collapsed", !!collapsed);
+    layoutForSidebar.style.setProperty("--w-sidebar", collapsed ? "0px" : "300px");
     if (collapseSetlistsBtn){
       collapseSetlistsBtn.setAttribute("aria-label", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
       collapseSetlistsBtn.setAttribute("title", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
@@ -2526,7 +2527,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   var RESIZE_MAX_PX = 1400;
   var STACK_BREAKPOINT = 980;
 
-  var panelOrder = DEFAULT_PANEL_ORDER.slice();
+  var panelOrder = ["setlists", "library", "editor"];
   var panelWidths = Object.assign({}, DEFAULT_PANEL_FR);
   var panelWidthsPx = {};
 
@@ -2565,7 +2566,10 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       if (!raw) return;
       var obj = JSON.parse(raw);
       if (Array.isArray(obj) && obj.length === 3 &&
-          DEFAULT_PANEL_ORDER.slice().sort().join(",") === obj.slice().sort().join(",")) panelOrder = obj;
+          DEFAULT_PANEL_ORDER.slice().sort().join(",") === obj.slice().sort().join(",")){
+        var contentOrder = obj.filter(function(id){ return id !== "setlists"; });
+        if (contentOrder.length === 2) panelOrder = ["setlists"].concat(contentOrder);
+      }
     } catch(e){ /* ignore */ }
   }
 
@@ -2584,7 +2588,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     var handle2 = document.getElementById("resize-handle-2");
     if (handle1) handle1.style.order = 1;
     if (handle2) handle2.style.order = 3;
-    var id1 = panelOrder[0], id2 = panelOrder[1];
+    var id1 = "setlists", id2 = "library";
     if (typeof panelWidthsPx[id1] === "number") layoutEl.style.setProperty("--w-col1", clampPx(panelWidthsPx[id1]) + "px");
     else layoutEl.style.setProperty("--w-col1", panelWidths[id1] + "fr");
     if (typeof panelWidthsPx[id2] === "number") layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx[id2]) + "px");
@@ -2682,7 +2686,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       });
     }
     lockCurrentWidths();
-    setupResizeHandle(document.getElementById("resize-handle-1"),0,"--w-col1");
+    // The Setlists sidebar has a fixed width; only the two content panels are resizable.
     setupResizeHandle(document.getElementById("resize-handle-2"),1,"--w-col2");
   }
 
