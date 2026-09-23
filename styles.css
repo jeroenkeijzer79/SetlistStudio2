@@ -270,6 +270,8 @@ img{max-width:100%;}
   .resize-handle:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
 
   @media (min-width:981px){
+    /* Move desktop block titles slightly upward without changing mobile spacing. */
+    .panel-header{margin-top:-6px;}
     .layout #panel-setlists{
       background:var(--surface);
       border:1px solid var(--border);
