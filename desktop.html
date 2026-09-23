@@ -2296,7 +2296,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   function setlistsSidebarCollapsed(collapsed){
     if (!layoutForSidebar) return;
     layoutForSidebar.classList.toggle("setlists-collapsed", !!collapsed);
-    layoutForSidebar.style.setProperty("--w-sidebar", collapsed ? "0px" : "300px");
+    var sidebarWidth = (typeof panelWidthsPx !== "undefined" && typeof panelWidthsPx.setlists === "number") ? panelWidthsPx.setlists : 300;
+  layoutForSidebar.style.setProperty("--w-sidebar", collapsed ? "0px" : sidebarWidth + "px");
     if (collapseSetlistsBtn){
       collapseSetlistsBtn.setAttribute("aria-label", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
       collapseSetlistsBtn.setAttribute("title", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
