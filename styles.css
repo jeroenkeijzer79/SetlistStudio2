@@ -67,7 +67,7 @@ img{max-width:100%;}
     var(--surface) 20px
     );
     padding:16px 20px; box-shadow:var(--shadow); position:relative; overflow:hidden;
-    width:100vw; max-width:none; margin:0; align-self:stretch;
+    width:100vw; max-width:none; margin:-20px 0 0 -16px; align-self:stretch;
   }
   .topbar::before{
     content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
@@ -455,7 +455,7 @@ img{max-width:100%;}
     body{padding:10px 10px 34px;font-size:15px}
     .app{width:100%;max-width:100%;gap:10px}
 
-    .topbar{padding:10px 12px;gap:8px}
+    .topbar{padding:10px 12px;gap:8px; width:100vw; margin-left:-10px; margin-top:-10px}
     .topbar-title{min-width:0;gap:8px}
     .topbar-icon{width:34px;height:34px}
     .topbar-icon img{width:27px;height:27px}
