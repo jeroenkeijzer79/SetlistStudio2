@@ -2879,6 +2879,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
           list = list.filter(function(x){ return x.id !== id; });
           saveSavedThemes(list);
           if (loadDefaultThemeId() === id) clearDefaultThemeId();
+          saveThemesRemote(list);
           renderSettingsPanel();
           return;
         }
