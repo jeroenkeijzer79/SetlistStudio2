@@ -2569,6 +2569,32 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     else layoutEl.style.setProperty("--w-col2", panelWidths[id2] + "fr");
   }
 
+  function animatePanelLayoutChange(changeFn){
+    var layoutEl = document.querySelector(".layout");
+    if (!layoutEl || window.innerWidth <= STACK_BREAKPOINT){
+      changeFn();
+      return;
+    }
+    var els = Array.prototype.slice.call(layoutEl.querySelectorAll(".panel"));
+    var first = new Map();
+    els.forEach(function(el){ first.set(el, el.getBoundingClientRect()); });
+    changeFn();
+    requestAnimationFrame(function(){
+      els.forEach(function(el){
+        var a = first.get(el), b = el.getBoundingClientRect();
+        if (!a || !b) return;
+        var dx = a.left - b.left, dy = a.top - b.top;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+        el.style.transition = "none";
+        el.style.transform = "translate(" + dx + "px," + dy + "px)";
+        requestAnimationFrame(function(){
+          el.style.transition = "";
+          el.style.transform = "";
+        });
+      });
+    });
+  }
+
   var panelDragId = null;
   var panelDragSection = null;
   function panelIdForSection(section){
@@ -2614,7 +2640,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       if (!targetId || targetId===draggedId) return;
       var rect=targetSection.getBoundingClientRect(), before=e.clientX < rect.left+rect.width/2, copy=panelOrder.slice(), fromIdx=copy.indexOf(draggedId);
       if (fromIdx===-1) return; copy.splice(fromIdx,1); var insertAt=copy.indexOf(targetId); if (insertAt===-1) return;
-      if (!before) insertAt+=1; copy.splice(insertAt,0,draggedId); panelOrder=copy; savePanelOrder(); applyPanelLayout();
+      if (!before) insertAt+=1; copy.splice(insertAt,0,draggedId); panelOrder=copy; savePanelOrder(); animatePanelLayoutChange(function(){ applyPanelLayout(); });
     });
   }
 
@@ -2662,6 +2688,78 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     lockCurrentWidths();
     setupResizeHandle(document.getElementById("resize-handle-1"),0,"--w-col1");
     setupResizeHandle(document.getElementById("resize-handle-2"),1,"--w-col2");
+  }
+
+  // ---------- foldable Setlists sidebar ----------
+  var SETLISTS_SIDEBAR_KEY = "setliststudio.setlistsSidebarCollapsed";
+
+  function saveSetlistsSidebarState(collapsed){
+    try{ window.localStorage.setItem(SETLISTS_SIDEBAR_KEY, collapsed ? "1" : "0"); }catch(e){}
+  }
+  function loadSetlistsSidebarState(){
+    try{ return window.localStorage.getItem(SETLISTS_SIDEBAR_KEY) === "1"; }catch(e){ return false; }
+  }
+  function updateSetlistsSidebar(collapsed, instant){
+    var layoutEl = document.querySelector(".layout");
+    var panel = document.getElementById("panel-setlists");
+    var toggle = document.getElementById("setlists-sidebar-toggle");
+    var tab = document.getElementById("setlists-sidebar-tab");
+    if (!layoutEl || !panel) return;
+
+    layoutEl.classList.toggle("setlists-sidebar-collapsed", collapsed);
+    layoutEl.classList.toggle("setlists-sidebar-open", !collapsed);
+    panel.classList.toggle("setlists-sidebar-collapsed", collapsed);
+    if (toggle){
+      toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      toggle.setAttribute("aria-label", collapsed ? "Setlists openen" : "Setlists verbergen");
+      toggle.title = collapsed ? "Setlists openen" : "Setlists verbergen";
+      toggle.innerHTML = collapsed
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>';
+    }
+    if (tab){
+      tab.hidden = !collapsed;
+      tab.setAttribute("aria-hidden", collapsed ? "false" : "true");
+    }
+    if (instant) layoutEl.classList.add("setlists-sidebar-no-transition");
+    else layoutEl.classList.remove("setlists-sidebar-no-transition");
+  }
+
+  function initSetlistsSidebar(){
+    var panel = document.getElementById("panel-setlists");
+    var layoutEl = document.querySelector(".layout");
+    if (!panel || !layoutEl || window.innerWidth <= STACK_BREAKPOINT) return;
+
+    var header = panel.querySelector(".panel-header");
+    if (header && !document.getElementById("setlists-sidebar-toggle")){
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "icon-btn setlists-sidebar-toggle";
+      button.id = "setlists-sidebar-toggle";
+      button.setAttribute("aria-controls", "panel-setlists");
+      button.addEventListener("click", function(){
+        var collapsed = !layoutEl.classList.contains("setlists-sidebar-collapsed");
+        updateSetlistsSidebar(collapsed, false);
+        saveSetlistsSidebarState(collapsed);
+      });
+      header.appendChild(button);
+    }
+
+    if (!document.getElementById("setlists-sidebar-tab")){
+      var tab = document.createElement("button");
+      tab.type = "button";
+      tab.id = "setlists-sidebar-tab";
+      tab.className = "setlists-sidebar-tab";
+      tab.setAttribute("aria-controls", "panel-setlists");
+      tab.innerHTML = '<span class="setlists-sidebar-tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span><span>Setlists</span>';
+      tab.addEventListener("click", function(){
+        updateSetlistsSidebar(false, false);
+        saveSetlistsSidebarState(false);
+      });
+      document.body.appendChild(tab);
+    }
+
+    updateSetlistsSidebar(loadSetlistsSidebarState(), true);
   }
 
   function initPanelLayout(){
@@ -2800,6 +2898,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   // ---------- boot ----------
   applyTheme(currentTheme());
   initPanelLayout();
+  initSetlistsSidebar();
   initStore();
 })();
 </script>
