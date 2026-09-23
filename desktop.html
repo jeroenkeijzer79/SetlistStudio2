@@ -2554,14 +2554,20 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
 
   function applyPanelLayout(){
     var layoutEl = document.querySelector(".layout");
-    panelOrder.forEach(function(id, i){
+    // Setlists is a fixed sidebar and is deliberately excluded from the
+    // workspace ordering. Only Library and Active Setlist occupy the two
+    // desktop workspace columns.
+    var workspaceOrder = panelOrder.filter(function(id){ return id !== "setlists"; });
+    workspaceOrder.forEach(function(id, i){
       var section = panelSectionEl(id);
-      if (section) section.style.order = i * 2;
+      if (section) section.style.order = i;
     });
+    var setlistsSection = panelSectionEl("setlists");
+    if (setlistsSection) setlistsSection.style.order = 99;
     var handle1 = document.getElementById("resize-handle-1");
     var handle2 = document.getElementById("resize-handle-2");
-    if (handle1) handle1.style.order = 1;
-    if (handle2) handle2.style.order = 3;
+    if (handle1) handle1.style.display = "none";
+    if (handle2) handle2.style.display = "none";
     var id1 = panelOrder[0], id2 = panelOrder[1];
     if (typeof panelWidthsPx[id1] === "number") layoutEl.style.setProperty("--w-col1", clampPx(panelWidthsPx[id1]) + "px");
     else layoutEl.style.setProperty("--w-col1", panelWidths[id1] + "fr");
@@ -2575,7 +2581,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       changeFn();
       return;
     }
-    var els = Array.prototype.slice.call(layoutEl.querySelectorAll(".panel"));
+    var els = Array.prototype.slice.call(layoutEl.querySelectorAll(".panel"))
+      .filter(function(el){ return el.id !== "panel-setlists"; });
     var first = new Map();
     els.forEach(function(el){ first.set(el, el.getBoundingClientRect()); });
     changeFn();
@@ -2607,6 +2614,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   }
   function initPanelReorder(){
     DEFAULT_PANEL_ORDER.forEach(function(id){
+      if (id === "setlists") return; // Setlists is a fixed sidebar, not a workspace panel.
       var section = panelSectionEl(id), header = section ? section.querySelector(".panel-header") : null;
       if (!header || header.querySelector(".panel-drag-handle")) return;
       var actions = header.querySelector(".panel-header-actions");
