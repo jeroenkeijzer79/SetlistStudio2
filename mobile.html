@@ -188,7 +188,10 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   };
   // ---------- theme (per-device colour overrides) ----------
   var THEME_KEY = "setlist-studio:theme";
+  var THEME_LIBRARY_KEY = "setlist-studio:themes";
+  var THEME_DEFAULT_KEY = "setlist-studio:default-theme";
   var DEFAULT_THEME = {bg:"#161616", surface:"#232323", surface2:"#2d2b29", border:"#413e3a", accent:"#f4673b", text:"#f5f3f0", textMuted:"#a89f96"};
+
   function loadThemeOverride(){
     try{
       var raw = window.localStorage.getItem(THEME_KEY);
@@ -203,8 +206,43 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   function clearThemeOverride(){
     try{ window.localStorage.removeItem(THEME_KEY); } catch(e){ /* ignore */ }
   }
+  function loadSavedThemes(){
+    try{
+      var raw = window.localStorage.getItem(THEME_LIBRARY_KEY);
+      if (!raw) return [];
+      var list = JSON.parse(raw);
+      if (!Array.isArray(list)) return [];
+      return list.filter(function(item){
+        return item && typeof item.id === "string" && typeof item.name === "string" && item.theme && typeof item.theme === "object";
+      });
+    } catch(e){ return []; }
+  }
+  function saveSavedThemes(list){
+    try{ window.localStorage.setItem(THEME_LIBRARY_KEY, JSON.stringify(list)); } catch(e){ /* ignore */ }
+  }
+  function loadDefaultThemeId(){
+    try{ return window.localStorage.getItem(THEME_DEFAULT_KEY) || ""; } catch(e){ return ""; }
+  }
+  function saveDefaultThemeId(id){
+    try{ window.localStorage.setItem(THEME_DEFAULT_KEY, id); } catch(e){ /* ignore */ }
+  }
+  function clearDefaultThemeId(){
+    try{ window.localStorage.removeItem(THEME_DEFAULT_KEY); } catch(e){ /* ignore */ }
+  }
+  function getSavedDefaultTheme(){
+    var id = loadDefaultThemeId();
+    if (!id) return null;
+    var list = loadSavedThemes();
+    for (var i=0;i<list.length;i++){
+      if (list[i].id === id) return list[i].theme;
+    }
+    return null;
+  }
   function currentTheme(){
-    return Object.assign({}, DEFAULT_THEME, loadThemeOverride() || {});
+    return Object.assign({}, DEFAULT_THEME, loadThemeOverride() || getSavedDefaultTheme() || {});
+  }
+  function themeId(){
+    return "theme-" + Date.now() + "-" + Math.random().toString(16).slice(2);
   }
   function hexToRgb(hex){
     var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
@@ -468,6 +506,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
 
   function themeSectionHtml(){
     var t = currentTheme();
+    var savedThemes = loadSavedThemes();
+    var defaultId = loadDefaultThemeId();
     var swatches = [
       {id:"theme-bg", key:"bg", label:"Achtergrond"},
       {id:"theme-surface", key:"surface", label:"Blokken"},
@@ -477,6 +517,21 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       {id:"theme-text", key:"text", label:"Tekst"},
       {id:"theme-textmuted", key:"textMuted", label:"Tekst (gedempt)"}
     ];
+    var savedHtml = savedThemes.length ? '<div class="saved-themes">' +
+      '<h4 class="settings-subheading">Opgeslagen thema\'s</h4>' +
+      savedThemes.map(function(item){
+        return '<div class="saved-theme-row">' +
+          '<span class="saved-theme-name">' + escapeHtml(item.name) + (item.id === defaultId ? ' <span class="saved-theme-default">standaard</span>' : '') + '</span>' +
+          '<div class="saved-theme-actions">' +
+            '<button type="button" class="btn btn-ghost btn-small" data-theme-action="apply" data-theme-id="' + escapeHtml(item.id) + '">Toepassen</button>' +
+            (item.id === defaultId
+              ? '<button type="button" class="btn btn-ghost btn-small" data-theme-action="unset-default" data-theme-id="' + escapeHtml(item.id) + '">Standaard verwijderen</button>'
+              : '<button type="button" class="btn btn-ghost btn-small" data-theme-action="set-default" data-theme-id="' + escapeHtml(item.id) + '">Als standaard</button>') +
+            '<button type="button" class="btn btn-ghost btn-small" data-theme-action="delete" data-theme-id="' + escapeHtml(item.id) + '">Verwijderen</button>' +
+          '</div>' +
+        '</div>';
+      }).join("") +
+      '</div>' : '';
     return '' +
       '<div class="settings-divider"></div>' +
       '<div class="settings-theme">' +
@@ -489,6 +544,12 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
             '</label>';
           }).join("") +
         '</div>' +
+        '<div class="theme-save-row">' +
+          '<input type="text" class="input" id="theme-save-name" placeholder="Naam van thema" maxlength="40">' +
+          '<button type="button" class="btn btn-accent btn-small" id="theme-save-btn">Thema opslaan</button>' +
+        '</div>' +
+        '<p class="hint">Sla de huidige kleuren op als thema. Je kunt een opgeslagen thema daarna toepassen of als standaard instellen.</p>' +
+        savedHtml +
         '<button type="button" class="btn btn-ghost btn-small" id="theme-reset-btn">Standaardkleuren herstellen</button>' +
       '</div>';
   }
@@ -2721,9 +2782,68 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
         if (setlistFileInput) setlistFileInput.click();
         return;
       }
+      if (e.target.id === "theme-save-btn"){
+        var nameInput = document.getElementById("theme-save-name");
+        var name = nameInput ? nameInput.value.trim() : "";
+        if (!name){
+          if (nameInput) nameInput.focus();
+          return;
+        }
+        var list = loadSavedThemes();
+        var theme = currentTheme();
+        var existing = null;
+        for (var i=0;i<list.length;i++){
+          if (list[i].name.toLowerCase() === name.toLowerCase()){
+            existing = list[i];
+            break;
+          }
+        }
+        if (existing){
+          existing.name = name;
+          existing.theme = Object.assign({}, theme);
+        } else {
+          list.push({id:themeId(), name:name, theme:Object.assign({}, theme)});
+        }
+        saveSavedThemes(list);
+        saveThemeOverride(theme);
+        applyTheme(theme);
+        renderSettingsPanel();
+        return;
+      }
+      var themeActionBtn = e.target.closest && e.target.closest("[data-theme-action]");
+      if (themeActionBtn){
+        var action = themeActionBtn.getAttribute("data-theme-action");
+        var id = themeActionBtn.getAttribute("data-theme-id");
+        var list = loadSavedThemes();
+        var item = null;
+        for (var i=0;i<list.length;i++){
+          if (list[i].id === id){ item = list[i]; break; }
+        }
+        if (!item) return;
+        if (action === "apply" || action === "set-default"){
+          var theme = Object.assign({}, DEFAULT_THEME, item.theme);
+          saveThemeOverride(theme);
+          applyTheme(theme);
+          if (action === "set-default") saveDefaultThemeId(item.id);
+          renderSettingsPanel();
+          return;
+        }
+        if (action === "unset-default"){
+          clearDefaultThemeId();
+          renderSettingsPanel();
+          return;
+        }
+        if (action === "delete"){
+          list = list.filter(function(x){ return x.id !== id; });
+          saveSavedThemes(list);
+          if (loadDefaultThemeId() === id) clearDefaultThemeId();
+          renderSettingsPanel();
+          return;
+        }
+      }
       if (e.target.id === "theme-reset-btn"){
         clearThemeOverride();
-        applyTheme(DEFAULT_THEME);
+        applyTheme(currentTheme());
         renderSettingsPanel();
         return;
       }
