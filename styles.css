@@ -189,7 +189,7 @@ img{max-width:100%;}
   transition:grid-template-columns .32s cubic-bezier(.4,0,.2,1);
 }
 .layout.setlists-collapsed{
-  grid-template-columns:0px 0px minmax(240px, 1fr) 30px minmax(320px, 1fr);
+  grid-template-columns:0px 0px minmax(240px, var(--w-col2, 1fr)) 30px minmax(320px, 1fr);
 }
 .layout #panel-setlists{
   grid-column:1;
