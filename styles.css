@@ -234,6 +234,11 @@ img{max-width:100%;}
   box-shadow:var(--shadow);
   transition:left .32s cubic-bezier(.4,0,.2,1), background .15s ease, box-shadow .15s ease;
 }
+.icon-btn.setlists-sidebar-toggle{
+  background:var(--surface);
+  color:var(--text);
+  border-color:var(--border);
+}
 .setlists-sidebar-toggle:hover{
   background:var(--surface-2, var(--surface));
   box-shadow:0 4px 14px rgba(0,0,0,.14);
