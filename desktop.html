@@ -2591,11 +2591,19 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     var handle2 = document.getElementById("resize-handle-2");
     if (handle1) handle1.style.order = 1;
     if (handle2) handle2.style.order = 3;
-    var id1 = "setlists", id2 = "library";
-    if (typeof panelWidthsPx[id1] === "number") layoutEl.style.setProperty("--w-sidebar", clampPx(panelWidthsPx[id1]) + "px");
-    else layoutEl.style.setProperty("--w-sidebar", panelWidths[id1] + "fr");
-    if (typeof panelWidthsPx[id2] === "number") layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx[id2]) + "px");
-    else layoutEl.style.setProperty("--w-col2", panelWidths[id2] + "fr");
+    var sidebarId = "setlists";
+    var firstContentId = panelOrder[1];
+    var sidebarSection = panelSectionEl(sidebarId);
+    var firstContentSection = panelSectionEl(firstContentId);
+    var secondContentId = panelOrder[2];
+    var secondContentSection = panelSectionEl(secondContentId);
+    if (sidebarSection) sidebarSection.style.gridColumn = "1";
+    if (firstContentSection) firstContentSection.style.gridColumn = "3";
+    if (secondContentSection) secondContentSection.style.gridColumn = "5";
+    if (typeof panelWidthsPx[sidebarId] === "number") layoutEl.style.setProperty("--w-sidebar", clampPx(panelWidthsPx[sidebarId]) + "px");
+    else layoutEl.style.setProperty("--w-sidebar", panelWidths[sidebarId] + "fr");
+    if (typeof panelWidthsPx[firstContentId] === "number") layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx[firstContentId]) + "px");
+    else layoutEl.style.setProperty("--w-col2", panelWidths[firstContentId] + "fr");
   }
 
   var panelDragId = null;
