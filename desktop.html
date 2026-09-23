@@ -80,6 +80,9 @@
   </div>
 
   <main class="layout">
+    <button type="button" class="icon-btn setlists-sidebar-reopen" id="reopen-setlists-sidebar" aria-label="Setlists uitklappen" title="Setlists uitklappen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
     <section class="panel panel-library" data-component="library"></section>
 
     <div class="resize-handle" id="resize-handle-1" role="separator" aria-orientation="vertical" aria-label="Breedte van het eerste blok aanpassen" tabindex="0"><span class="resize-handle-bar"></span></div>
@@ -2290,6 +2293,25 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   }
   // ---------- event delegation: setlists panel ----------
   var setlistsPanel = document.getElementById("panel-setlists");
+  var layoutForSidebar = document.querySelector(".layout");
+  var collapseSetlistsBtn = document.getElementById("toggle-setlists-sidebar");
+  var reopenSetlistsBtn = document.getElementById("reopen-setlists-sidebar");
+  function setlistsSidebarCollapsed(collapsed){
+    if (!layoutForSidebar) return;
+    layoutForSidebar.classList.toggle("setlists-collapsed", !!collapsed);
+    if (collapseSetlistsBtn){
+      collapseSetlistsBtn.setAttribute("aria-label", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
+      collapseSetlistsBtn.setAttribute("title", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
+      var icon = collapseSetlistsBtn.querySelector("svg");
+      if (icon) icon.innerHTML = collapsed ? '<path d="M9 6l6 6-6 6"/>' : '<path d="M15 6l-6 6 6 6"/>';
+    }
+  }
+  if (collapseSetlistsBtn) collapseSetlistsBtn.addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation(); setlistsSidebarCollapsed(true);
+  });
+  if (reopenSetlistsBtn) reopenSetlistsBtn.addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation(); setlistsSidebarCollapsed(false);
+  });
   setlistsPanel.addEventListener("dragstart", function(e){
     var item = e.target.closest ? e.target.closest(".setlist-row") : null;
     if (!item) return;
