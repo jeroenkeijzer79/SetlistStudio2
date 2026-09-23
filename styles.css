@@ -200,65 +200,6 @@ img{max-width:100%;}
   .resize-handle-bar{ width:8px; height:150px; border-radius:6px; background:var(--border); }
   .resize-handle:hover .resize-handle-bar, .resize-handle:focus-visible .resize-handle-bar{ background:var(--accent); }
   .resize-handle:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
-
-  /* Desktop: Setlists is a real left sidebar, collapsed to an icon rail by
-     default. It participates in the grid, so expanding it pushes the other
-     panels right instead of overlaying them. Its own width (when expanded)
-     and the Bibliotheek/Actieve setlist split both stay independently
-     resizable via #resize-handle-1 / #resize-handle-2. */
-  .layout{
-    --setlists-width:48px;
-    grid-template-columns:
-      minmax(48px, var(--setlists-width))
-      10px
-      minmax(240px, var(--w-col2, 1.55fr))
-      30px
-      minmax(320px, 1fr);
-  }
-  .panel-setlists{
-    overflow:hidden;
-    transition:width .18s ease, min-width .18s ease;
-  }
-  .panel-setlists .panel-header{
-    flex-wrap:nowrap;
-  }
-  .setlists-sidebar-toggle{
-    width:32px;
-    height:32px;
-    min-width:32px;
-    padding:7px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    border:1px solid var(--border);
-    border-radius:8px;
-    background:var(--surface-2);
-    color:var(--text);
-    cursor:pointer;
-  }
-  .setlists-sidebar-toggle svg{width:17px;height:17px;transition:transform .18s ease;}
-  .panel-setlists.is-sidebar-collapsed{
-    padding:10px 7px;
-    min-width:48px;
-    width:48px;
-  }
-  .panel-setlists.is-sidebar-collapsed .panel-header{
-    justify-content:center;
-  }
-  .panel-setlists.is-sidebar-collapsed .panel-header h2,
-  .panel-setlists.is-sidebar-collapsed .panel-header ~ *{
-    display:none;
-  }
-  .panel-setlists.is-sidebar-collapsed .setlists-sidebar-toggle svg{
-    transform:rotate(180deg);
-  }
-  .panel-setlists.is-sidebar-collapsed .setlists-sidebar-toggle{
-    margin:0;
-  }
-  .layout:has(.panel-setlists.is-sidebar-collapsed){
-    --setlists-width:48px;
-  }
-
   @media (max-width: 980px){
     .layout{grid-template-columns:1fr;}
     .resize-handle{display:none;}
@@ -551,7 +492,6 @@ img{max-width:100%;}
     }
     .panel.is-collapsed .panel-header::after{transform:rotate(-45deg)}
     .panel-drag-handle,.panel-header-actions{display:none!important}
-    .setlists-sidebar-toggle{display:none!important}
     .panel.is-collapsed>:not(.panel-header){display:none!important}
 
     .panel-setlists .setlists-filters{display:flex;width:100%;flex-wrap:wrap;gap:6px}
