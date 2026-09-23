@@ -179,7 +179,7 @@ img{max-width:100%;}
   display:grid;
   grid-template-columns:
     minmax(270px, var(--w-sidebar, 300px))
-    38px
+    54px
     minmax(240px, var(--w-col2, 1fr))
     30px
     minmax(320px, 1fr);
@@ -202,9 +202,7 @@ img{max-width:100%;}
   transition:opacity .22s ease, transform .32s ease, padding .32s ease, border-width .32s ease, width .32s ease;
 }
 .layout #resize-handle-1{grid-column:2;grid-row:1;}
-.layout #panel-library{grid-column:3;grid-row:1;min-width:0;}
-.layout #resize-handle-2{grid-column:4;grid-row:1;}
-.layout #panel-editor{grid-column:5;grid-row:1;min-width:0;}
+.layout #panel-library,.layout #panel-editor{grid-row:1;min-width:0;}
 .layout.setlists-collapsed #panel-setlists{
   opacity:0;
   transform:translateX(-24px);
