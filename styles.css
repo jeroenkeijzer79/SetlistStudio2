@@ -271,7 +271,7 @@ img{max-width:100%;}
 
   @media (min-width:981px){
     /* Move desktop block titles slightly upward without changing mobile spacing. */
-    .panel-header{margin-top:-6px;}
+    .panel-header{margin-top:-12px;}
     .layout #panel-setlists{
       background:var(--surface);
       border:1px solid var(--border);
