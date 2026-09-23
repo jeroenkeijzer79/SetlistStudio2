@@ -190,6 +190,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   var THEME_KEY = "setlist-studio:theme";
   var THEME_LIBRARY_KEY = "setlist-studio:themes";
   var THEME_DEFAULT_KEY = "setlist-studio:default-theme";
+  var THEME_REMOTE_PATH = "meta/themes";
   var DEFAULT_THEME = {bg:"#161616", surface:"#232323", surface2:"#2d2b29", border:"#413e3a", accent:"#f4673b", text:"#f5f3f0", textMuted:"#a89f96", shadowColor:"#000000", resizeHandleColor:"#413e3a"};
 
   function loadThemeOverride(){
@@ -219,6 +220,27 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   }
   function saveSavedThemes(list){
     try{ window.localStorage.setItem(THEME_LIBRARY_KEY, JSON.stringify(list)); } catch(e){ /* ignore */ }
+    saveThemesRemote(list);
+  }
+  function saveThemesRemote(list){
+    if (!db) return;
+    var payload = {themes:Array.isArray(list) ? list : [], defaultThemeId:loadDefaultThemeId() || ""};
+    db.collection("meta").doc("themes").set(payload, {merge:true}).catch(function(){ /* local fallback remains */ });
+  }
+  function syncThemesFromRemote(data){
+    if (!data) return;
+    var remoteList = Array.isArray(data.themes) ? data.themes.filter(function(item){
+      return item && typeof item.id === "string" && typeof item.name === "string" && item.theme && typeof item.theme === "object";
+    }) : [];
+    if (remoteList.length){
+      try{ window.localStorage.setItem(THEME_LIBRARY_KEY, JSON.stringify(remoteList)); } catch(e){ /* ignore */ }
+    }
+    var remoteDefault = typeof data.defaultThemeId === "string" ? data.defaultThemeId : "";
+    try{
+      if (remoteDefault) window.localStorage.setItem(THEME_DEFAULT_KEY, remoteDefault);
+      else window.localStorage.removeItem(THEME_DEFAULT_KEY);
+    } catch(e){ /* ignore */ }
+    renderSettingsPanel();
   }
   function loadDefaultThemeId(){
     try{ return window.localStorage.getItem(THEME_DEFAULT_KEY) || ""; } catch(e){ return ""; }
@@ -406,6 +428,7 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   var unsubTracks = null;
   var unsubSetlists = null;
   var unsubSettings = null;
+  var unsubThemes = null;
 
   // Tri-state resolution of which Firebase project (if any) this device
   // should use: an explicit "disabled" marker wins (the visitor turned
@@ -712,12 +735,26 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     return String(email || "").split("@")[0];
   }
 
+  function subscribeThemes(){
+    if (!db) return;
+    unsubThemes = db.collection("meta").doc("themes").onSnapshot(function(doc){
+      if (doc.exists) {
+        syncThemesFromRemote(doc.data());
+      } else {
+        var localList = loadSavedThemes();
+        if (localList.length) saveThemesRemote(localList);
+      }
+    }, function(){ /* local theme storage remains available */ });
+  }
+
   function subscribeRemote(){
     unsubTracks = db.collection("tracks").onSnapshot(function(snap){
       tracksMap.clear();
       snap.docs.forEach(function(d){ tracksMap.set(d.id, Object.assign({id:d.id}, d.data())); });
       renderLibrary(); renderSetlistsList(); renderActiveSetlist(); renderStats();
     }, function(){ showBanner("De bibliotheek kon niet worden geladen. Probeer de pagina te vernieuwen.", "warn"); });
+
+    subscribeThemes();
 
     unsubSetlists = db.collection("setlists").onSnapshot(function(snap){
       setlistsMap.clear();
@@ -2828,12 +2865,13 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
           var theme = Object.assign({}, DEFAULT_THEME, item.theme);
           saveThemeOverride(theme);
           applyTheme(theme);
-          if (action === "set-default") saveDefaultThemeId(item.id);
+          if (action === "set-default") { saveDefaultThemeId(item.id); saveThemesRemote(list); }
           renderSettingsPanel();
           return;
         }
         if (action === "unset-default"){
           clearDefaultThemeId();
+          saveThemesRemote(list);
           renderSettingsPanel();
           return;
         }
