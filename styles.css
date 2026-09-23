@@ -201,13 +201,16 @@ img{max-width:100%;}
   .resize-handle:hover .resize-handle-bar, .resize-handle:focus-visible .resize-handle-bar{ background:var(--accent); }
   .resize-handle:focus-visible{ outline:2px solid var(--accent); outline-offset:-2px; }
 
-  /* Desktop: Setlists is a real left sidebar. It participates in the grid,
-     so expanding it pushes the other panels right instead of overlaying them. */
+  /* Desktop: Setlists is a real left sidebar, collapsed to an icon rail by
+     default. It participates in the grid, so expanding it pushes the other
+     panels right instead of overlaying them. Its own width (when expanded)
+     and the Bibliotheek/Actieve setlist split both stay independently
+     resizable via #resize-handle-1 / #resize-handle-2. */
   .layout{
-    --setlists-width:320px;
+    --setlists-width:48px;
     grid-template-columns:
       minmax(48px, var(--setlists-width))
-      14px
+      10px
       minmax(240px, var(--w-col2, 1.55fr))
       30px
       minmax(320px, 1fr);
@@ -254,20 +257,6 @@ img{max-width:100%;}
   }
   .layout:has(.panel-setlists.is-sidebar-collapsed){
     --setlists-width:48px;
-  }
-  /* The first separator belongs to the sidebar; the second remains the
-     resize handle between the two main content blocks. */
-  #resize-handle-1{display:none;}
-  #resize-handle-2{width:10px;}
-  @media (min-width:981px){
-    .layout{
-      grid-template-columns:
-        minmax(48px, var(--setlists-width))
-        14px
-        minmax(240px, var(--w-col2, 1.55fr))
-        30px
-        minmax(320px, 1fr);
-    }
   }
 
   @media (max-width: 980px){

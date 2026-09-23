@@ -2504,13 +2504,45 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
   var RESIZE_MAX_PX = 1400;
   var STACK_BREAKPOINT = 980;
 
+  // Setlists sidebar: hidden (icon rail) by default, opened via a toggle
+  // button, and independently resizable while open.
+  var SIDEBAR_COLLAPSED_KEY = "setlist-studio:setlists-sidebar-collapsed";
+  var SIDEBAR_WIDTH_KEY = "setlist-studio:setlists-sidebar-width-px";
+  var SIDEBAR_COLLAPSED_PX = 48;
+  var SIDEBAR_MIN_PX = 220;
+  var SIDEBAR_MAX_PX = 480;
+  var SIDEBAR_DEFAULT_PX = 320;
+
   var panelOrder = DEFAULT_PANEL_ORDER.slice();
   var panelWidths = Object.assign({}, DEFAULT_PANEL_FR);
   var panelWidthsPx = {};
+  var sidebarCollapsed = true;
+  var sidebarWidthPx = SIDEBAR_DEFAULT_PX;
 
   function clampPx(v){ return Math.max(RESIZE_MIN_PX, Math.min(RESIZE_MAX_PX, v)); }
+  function clampSidebarPx(v){ return Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, v)); }
   function panelPx(el){ return el ? el.getBoundingClientRect().width : 0; }
   function panelSectionEl(id){ return document.getElementById(PANEL_SECTION_IDS[id]); }
+
+  function loadSidebarState(){
+    try{
+      var storedCollapsed = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+      sidebarCollapsed = storedCollapsed === null ? true : storedCollapsed === "1";
+    }catch(e){ /* ignore */ }
+    try{
+      var storedWidth = window.localStorage.getItem(SIDEBAR_WIDTH_KEY);
+      if (storedWidth){
+        var n = parseFloat(storedWidth);
+        if (!isNaN(n)) sidebarWidthPx = clampSidebarPx(n);
+      }
+    }catch(e){ /* ignore */ }
+  }
+  function saveSidebarCollapsed(){
+    try{ window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, sidebarCollapsed ? "1" : "0"); }catch(e){ /* ignore */ }
+  }
+  function saveSidebarWidth(){
+    try{ window.localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidthPx)); }catch(e){ /* ignore */ }
+  }
 
   function savePanelWidths(){
     try{ window.localStorage.setItem(PANEL_WIDTHS_KEY, JSON.stringify(panelWidths)); } catch(e){ /* ignore */ }
@@ -2572,6 +2604,10 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
       layoutEl.style.setProperty("--w-col2", clampPx(panelWidthsPx.library) + "px");
     } else {
       layoutEl.style.setProperty("--w-col2", panelWidths.library + "fr");
+    }
+
+    if (layoutEl) {
+      layoutEl.style.setProperty("--setlists-width", (sidebarCollapsed ? SIDEBAR_COLLAPSED_PX : sidebarWidthPx) + "px");
     }
   }
 
@@ -2643,9 +2679,8 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
 
     function dynamicMaxPx(){
       var editor = panelPx(editorSection);
-      var sidebar = document.getElementById("panel-setlists");
-      var sidebarWidth = sidebar ? panelPx(sidebar) : 320;
-      var reserve = editor + sidebarWidth + 14 + 30 + 48;
+      var sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED_PX : sidebarWidthPx;
+      var reserve = editor + sidebarWidth + 10 + 30 + 48;
       return Math.max(240, Math.min(1400, window.innerWidth - reserve));
     }
 
@@ -2689,52 +2724,92 @@ for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-component'),x=new XMLH
     lockCurrentWidth();
   }
 
+  function relockLibraryWidthAfterSidebarChange(){
+    var layoutEl = document.querySelector(".layout");
+    var lib = document.getElementById("panel-library");
+    if (!layoutEl || !lib) return;
+    var px = lib.getBoundingClientRect().width;
+    if (px > 0){
+      panelWidthsPx.library = clampPx(px);
+      layoutEl.style.setProperty("--w-col2", panelWidthsPx.library + "px");
+      savePanelWidths();
+    }
+  }
+
   function initSetlistsSidebar(){
     var panel = document.getElementById("panel-setlists");
     var btn = document.getElementById("setlists-sidebar-toggle");
-    if (!panel || !btn) return;
-
-    var key = "setlist-studio:setlists-sidebar-collapsed";
-    var collapsed = false;
-    try{ collapsed = window.localStorage.getItem(key) === "1"; }catch(e){}
+    var layoutEl = document.querySelector(".layout");
+    if (!panel || !btn || !layoutEl) return;
 
     function apply(){
-      panel.classList.toggle("is-sidebar-collapsed", collapsed);
-      btn.setAttribute("aria-label", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
-      btn.setAttribute("title", collapsed ? "Setlists uitklappen" : "Setlists inklappen");
-      if (collapsed){
-        panel.style.setProperty("--setlists-width", "48px");
-      } else {
-        panel.style.removeProperty("--setlists-width");
-      }
+      panel.classList.toggle("is-sidebar-collapsed", sidebarCollapsed);
+      btn.setAttribute("aria-label", sidebarCollapsed ? "Setlists uitklappen" : "Setlists inklappen");
+      btn.setAttribute("title", sidebarCollapsed ? "Setlists uitklappen" : "Setlists inklappen");
+      layoutEl.style.setProperty("--setlists-width", (sidebarCollapsed ? SIDEBAR_COLLAPSED_PX : sidebarWidthPx) + "px");
     }
-    btn.addEventListener("click", function(){
-      collapsed = !collapsed;
-      try{ window.localStorage.setItem(key, collapsed ? "1" : "0"); }catch(e){}
-      apply();
-      requestAnimationFrame(function(){ initResizersAfterSidebarChange(); });
-    });
-    apply();
 
-    function initResizersAfterSidebarChange(){
-      var layoutEl = document.querySelector(".layout");
-      var lib = document.getElementById("panel-library");
-      if (!layoutEl || !lib) return;
-      var px = lib.getBoundingClientRect().width;
-      if (px > 0){
-        panelWidthsPx.library = clampPx(px);
-        layoutEl.style.setProperty("--w-col2", panelWidthsPx.library + "px");
-        savePanelWidths();
-      }
+    btn.addEventListener("click", function(){
+      sidebarCollapsed = !sidebarCollapsed;
+      saveSidebarCollapsed();
+      apply();
+      requestAnimationFrame(relockLibraryWidthAfterSidebarChange);
+    });
+
+    apply();
+  }
+
+  function initSidebarResize(){
+    var layoutEl = document.querySelector(".layout");
+    var handle = document.getElementById("resize-handle-1");
+    if (!layoutEl || !handle) return;
+
+    var dragging = false, startX = 0, startWidth = 0;
+    function currentWidth(){ return sidebarCollapsed ? SIDEBAR_COLLAPSED_PX : sidebarWidthPx; }
+
+    handle.addEventListener("pointerdown", function(e){
+      if (window.innerWidth < STACK_BREAKPOINT) return;
+      if (sidebarCollapsed) return; // expand via the toggle first, then drag
+      dragging = true;
+      startX = e.clientX;
+      startWidth = currentWidth();
+      try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+      document.body.style.userSelect = "none";
+    });
+    handle.addEventListener("pointermove", function(e){
+      if (!dragging) return;
+      var next = clampSidebarPx(startWidth + (e.clientX - startX));
+      sidebarWidthPx = next;
+      layoutEl.style.setProperty("--setlists-width", next + "px");
+    });
+    function endDrag(){
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.userSelect = "";
+      saveSidebarWidth();
     }
+    handle.addEventListener("pointerup", endDrag);
+    handle.addEventListener("pointercancel", endDrag);
+    handle.addEventListener("keydown", function(e){
+      if (sidebarCollapsed) return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      var next = clampSidebarPx(currentWidth() + (e.key === "ArrowRight" ? 24 : -24));
+      sidebarWidthPx = next;
+      layoutEl.style.setProperty("--setlists-width", next + "px");
+      saveSidebarWidth();
+    });
   }
 
   function initPanelLayout(){
     loadPanelOrder();
     loadPanelWidths();
+    loadSidebarState();
     initPanelReorder();
     applyPanelLayout();
     initResizers();
+    initSetlistsSidebar();
+    initSidebarResize();
   }
 
   // ---------- settings panel (cloud sync) ----------
